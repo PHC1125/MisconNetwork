@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Misconception Network of Great Scientists</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="home.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="top-nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <svg viewBox="0 0 40 40" width="28" height="28" fill="none">
+          <circle cx="20" cy="20" r="5" fill="url(#nlg)" />
+          <circle cx="8" cy="10" r="2.5" fill="url(#nlg)" opacity="0.7" />
+          <circle cx="32" cy="10" r="2.5" fill="url(#nlg)" opacity="0.7" />
+          <circle cx="8" cy="30" r="2.5" fill="url(#nlg)" opacity="0.7" />
+          <circle cx="32" cy="30" r="2.5" fill="url(#nlg)" opacity="0.7" />
+          <line x1="20" y1="20" x2="8" y2="10" stroke="#06B6D4" stroke-width="0.8" opacity="0.4" />
+          <line x1="20" y1="20" x2="32" y2="10" stroke="#06B6D4" stroke-width="0.8" opacity="0.4" />
+          <line x1="20" y1="20" x2="8" y2="30" stroke="#06B6D4" stroke-width="0.8" opacity="0.4" />
+          <line x1="20" y1="20" x2="32" y2="30" stroke="#06B6D4" stroke-width="0.8" opacity="0.4" />
+          <defs><linearGradient id="nlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#06B6D4"/><stop offset="100%" stop-color="#2DD4BF"/></linearGradient></defs>
+        </svg>
+        <span>Misconception Networks</span>
+      </a>
+      <div class="nav-links">
+        <a href="thales/index.html" class="nav-link" data-color="blue">Thales</a>
+        <a href="aristotle/index.html" class="nav-link" data-color="cyan">Aristotle</a>
+        <a href="palissy/index.html" class="nav-link" data-color="amber">Palissy</a>
+        <a href="vanhelmont/index.html" class="nav-link" data-color="green">Van Helmont</a>
+      </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="nav-mobile" id="nav-mobile">
+      <a href="thales/index.html" data-color="blue">Thales</a>
+      <a href="aristotle/index.html" data-color="cyan">Aristotle</a>
+      <a href="palissy/index.html" data-color="amber">Palissy</a>
+      <a href="vanhelmont/index.html" data-color="green">Van Helmont</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">History of Plant Science</div>
+      <h1 class="hero-title">Misconception Network<br/>of Great Scientists</h1>
+      <p class="hero-desc">For two millennia, brilliant thinkers tried to answer a deceptively simple question: where does a plant get its mass? Explore the interconnected misconceptions that shaped — and misled — our understanding of photosynthesis.</p>
+    </div>
+    <!-- Animated background dots -->
+    <canvas id="hero-bg" class="hero-bg"></canvas>
+  </header>
+
+  <!-- Timeline -->
+  <section class="timeline-section">
+    <div class="timeline-inner">
+      <div class="timeline-line"></div>
+      <div class="timeline-labels">
+        <span>600 BC</span>
+        <span>350 BC</span>
+        <span>1563 AD</span>
+        <span>1648 AD</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scientist Cards -->
+  <main class="cards-section">
+    <div class="cards-grid">
+
+      <!-- Thales (earliest: 640–546 BC) -->
+      <a href="thales/index.html" class="card card-blue">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <div class="card-era">640 – 546 BC</div>
+          <div class="card-node-count">14 nodes</div>
+        </div>
+        <h2 class="card-name">Thales</h2>
+        <p class="card-theory">"Water Theory"</p>
+        <p class="card-desc">Water is the fundamental substance of all reality. Plants derive all their food and all their substance from water alone — the single arche of nature.</p>
+        <div class="card-tags">
+          <span>Water</span><span>Arche</span><span>Single-Substance</span>
+        </div>
+        <div class="card-cta">
+          <span>Explore Network</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <!-- Aristotle (384–322 BC) -->
+      <a href="aristotle/index.html" class="card card-cyan">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <div class="card-era">384 – 322 BC</div>
+          <div class="card-node-count">16 nodes</div>
+        </div>
+        <h2 class="card-name">Aristotle</h2>
+        <p class="card-theory">"Humus Theory"</p>
+        <p class="card-desc">Plants feed on decayed organic matter in the soil. The earth acts as a stomach, pre-digesting food. Growth is passive accretion of pre-made material.</p>
+        <div class="card-tags">
+          <span>Humus</span><span>Soil</span><span>Passive Absorption</span>
+        </div>
+        <div class="card-cta">
+          <span>Explore Network</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <!-- Palissy (1509–1589 AD) -->
+      <a href="palissy/index.html" class="card card-amber">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <div class="card-era">1509 – 1589 AD</div>
+          <div class="card-node-count">15 nodes</div>
+        </div>
+        <h2 class="card-name">Bernard Palissy</h2>
+        <p class="card-theory">"Salt Theory"</p>
+        <p class="card-desc">Every plant contains salt. Burning plants to ash reveals their true mineral substance. Manure returns to the soil the salts that crops removed.</p>
+        <div class="card-tags">
+          <span>Salts</span><span>Ash</span><span>Nutrient Cycling</span>
+        </div>
+        <div class="card-cta">
+          <span>Explore Network</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <!-- Van Helmont (1577–1644 AD) -->
+      <a href="vanhelmont/index.html" class="card card-green">
+        <div class="card-glow"></div>
+        <div class="card-header">
+          <div class="card-era">1577 – 1644 AD</div>
+          <div class="card-node-count">14 nodes</div>
+        </div>
+        <h2 class="card-name">Van Helmont</h2>
+        <p class="card-theory">"Willow Experiment"</p>
+        <p class="card-desc">The first recorded plant physiology experiment. A willow gained 164 lbs while its soil lost only 2 oz — so all plant mass must come from water alone.</p>
+        <div class="card-tags">
+          <span>Experiment</span><span>Water</span><span>Quantitative</span>
+        </div>
+        <div class="card-cta">
+          <span>Explore Network</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>Source: Girton, R. E. "The Early Development of the Fundamental Concepts of Plant Nutrition (600 BC — 1804 AD)." Indiana Academy of Science.</p>
+  </footer>
+
+  <script src="home.js"></script>
+</body>
+</html>

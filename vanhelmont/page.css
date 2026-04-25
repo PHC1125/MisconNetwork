@@ -1,0 +1,82 @@
+/* === Sub-page: Van Helmont === */
+:root{
+  --accent1:#22C55E;--accent2:#4ADE80;
+  --navy-dark:#081410;--navy-mid:#0C2418;--navy-light:#143524;
+  --card-bg-local:#0B1E14;
+}
+
+body{
+  background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy-mid) 50%,var(--navy-light) 100%);
+  background-attachment:fixed;
+}
+
+.page-header{
+  padding:20px 24px 16px;
+  border-bottom:1px solid var(--card-border);
+}
+.page-header-inner{
+  max-width:var(--max-w);margin:0 auto;
+}
+.back-link{
+  display:inline-flex;align-items:center;gap:6px;
+  text-decoration:none;font-size:0.8125rem;
+  color:var(--text-muted);
+  transition:color .2s;margin-bottom:10px;
+}
+.back-link:hover{color:var(--text-primary)}
+
+.page-title{
+  font-size:clamp(1.25rem,1rem + 1.5vw,1.875rem);
+  font-weight:700;letter-spacing:-0.01em;
+  background:linear-gradient(to bottom right,var(--accent1),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:4px;
+}
+.page-subtitle{
+  font-size:0.9375rem;color:var(--text-secondary);
+}
+
+.main-content{
+  flex:1;display:flex;flex-direction:column;
+  padding:16px;max-width:var(--max-w);width:100%;margin:0 auto;
+}
+.canvas-container{
+  position:relative;flex:1;min-height:500px;
+  background:rgba(17,28,53,0.6);
+  border:1px solid var(--card-border);border-radius:16px;overflow:hidden;
+}
+#network-canvas{display:block;width:100%;height:100%;cursor:default}
+
+.tooltip{
+  position:absolute;pointer-events:none;opacity:0;transform:translateY(6px);
+  transition:opacity .2s ease,transform .2s ease;
+  background:var(--card-bg-local);
+  border:1px solid var(--card-border);border-radius:12px;
+  padding:16px 18px;max-width:320px;z-index:10;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.tooltip.visible{opacity:1;transform:translateY(0)}
+.tooltip-title{
+  font-size:1rem;font-weight:700;margin-bottom:6px;
+  background:linear-gradient(to right,var(--accent1),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.tooltip-desc{font-size:.8125rem;color:var(--text-secondary);line-height:1.55;margin-bottom:10px}
+.tooltip-connections{font-size:.75rem;color:var(--text-muted);border-top:1px solid var(--card-border);padding-top:8px}
+.tooltip-connections span{color:var(--accent2)}
+
+.info-panel{margin-top:16px}
+.info-panel-inner{
+  display:flex;align-items:flex-start;gap:10px;
+  background:rgba(17,28,53,0.6);
+  border:1px solid var(--card-border);border-radius:12px;padding:14px 18px;
+}
+.info-icon{flex-shrink:0;color:var(--accent1);margin-top:2px}
+.info-panel p{font-size:.8125rem;color:var(--text-secondary);line-height:1.55}
+
+@media(max-width:640px){
+  .page-header{padding:16px 16px 12px}
+  .main-content{padding:12px}
+  .canvas-container{min-height:400px}
+  .tooltip{max-width:260px;padding:12px 14px}
+}
