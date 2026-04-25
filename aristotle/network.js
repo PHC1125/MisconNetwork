@@ -1,394 +1,459 @@
-// === Aristotle's Network of Misconception — Interactive Visualisation ===
+/* =========================================================
+   Aristotle Weighted Misconception Network
+   4 clusters: M1 Soil, M2 Water, M3 Air, M4 Light + Integration
+   Style: SVG reference — dark navy bg, coloured cluster nodes,
+          thick weighted arrows, edge-weight labels on cross-cluster links
+   ========================================================= */
 
-(function () {
-  'use strict';
+const CLUSTER_COLORS = {
+  M1: { fill: '#c7833f', stroke: '#f6b66b', label: 'M1 Soil / Humus / External Stomach' },
+  M2: { fill: '#2db6ff', stroke: '#69cfff', label: 'M2 Water as Substance' },
+  M3: { fill: '#54d6c8', stroke: '#7df3e4', label: 'M3 Air as Empty or Weightless' },
+  M4: { fill: '#ffd35a', stroke: '#ffe37b', label: 'M4 Light / Energy as Mass' },
+  I:  { fill: '#b782ff', stroke: '#c9a2ff', label: 'Integration' },
+};
 
-  // ─── Data ───
-  const nodes = [
-    { id: 0,  name: 'Like Nourishes Like',           desc: 'The metaphysical principle that every living thing feeds on materials of a similar nature to itself. Organic beings must consume organic food.' },
-    { id: 1,  name: 'Plant–Animal Analogy',           desc: 'Plants are compared to animals: since animals eat organic matter, plants must also consume pre-formed organic material.' },
-    { id: 2,  name: 'Humus as Plant Food',             desc: 'The decaying animal and vegetable matter (humus) in soil is identified as the primary food source of plants.' },
-    { id: 3,  name: 'Soil as Sole Source',             desc: 'All plant nourishment comes from the soil. The atmosphere and sunlight play no nutritive role.' },
-    { id: 4,  name: 'Earth as External Stomach',       desc: 'The soil functions like a stomach: it elaborates (pre-digests) organic matter into ready-made food before the plant absorbs it.' },
-    { id: 5,  name: 'Pre-Elaborated Food',             desc: 'The nutritive material in soil is already fully processed and refined before the plant takes it up — no further transformation is needed.' },
-    { id: 6,  name: 'Passive Absorption',              desc: 'Plants play a passive role in nutrition — they simply absorb what the earth has already prepared, without performing any chemical work.' },
-    { id: 7,  name: 'No Excretion',                    desc: 'Plants produce no waste or excrement, unlike animals. This observation is used to argue that plants select only what they need.' },
-    { id: 8,  name: 'Perfect Selectivity',             desc: 'Because plants produce no waste, they must possess a perfect ability to absorb only the exact substances required for their structure.' },
-    { id: 9,  name: 'No Internal Chemistry',           desc: 'Plants do not perform any chemical transformation on their food. There is no synthesis, no digestion, and no metabolic conversion inside the plant.' },
-    { id: 10, name: 'Growth as Accretion',             desc: 'Plant growth is a process of gradual accumulation of pre-made material — without any accompanying chemical change.' },
-    { id: 11, name: 'Roots as Sole Organ',             desc: 'The roots are the only organs involved in obtaining nutrition. All food enters the plant through the roots from the soil.' },
-    { id: 12, name: 'Leaves Have No Nutritive Role',   desc: 'Leaves and aerial parts of the plant are not involved in nutrition. They serve structural purposes but do not contribute to feeding.' },
-    { id: 13, name: 'Water as Vehicle Only',           desc: 'Water is not itself a food — it merely serves as a carrier that delivers dissolved organic substances from the soil to the roots.' },
-    { id: 14, name: 'Diversity of Soil Substances',    desc: 'The soil contains as many different nutritive substances as there are different flavours and types of plants. Soil diversity explains plant diversity.' },
-    { id: 15, name: 'Ignorance of Atmospheric Gases',  desc: 'No knowledge existed of air as a mixture of gases. The idea that an invisible gas could become solid plant matter was inconceivable.' },
-  ];
+const NODES = [
+  // M1 Soil cluster
+  { id:'M1.00', cluster:'M1', label:'Soil as\nSole Source',       desc:'The plant\'s body comes primarily from soil or earth-derived substance.',             x:0, y:0 },
+  { id:'M1.01', cluster:'M1', label:'Humus as\nPlant Food',        desc:'Decayed organic matter is the plant\'s food.',                                        x:0, y:0 },
+  { id:'M1.02', cluster:'M1', label:'Like\nNourishes Like',        desc:'Living bodies are nourished by matter similar to themselves.',                         x:0, y:0 },
+  { id:'M1.03', cluster:'M1', label:'Plant-Animal\nAnalogy',        desc:'Plants should be understood by analogy with animal feeding.',                          x:0, y:0 },
+  { id:'M1.04', cluster:'M1', label:'Earth as\nExternal Stomach',   desc:'Soil digests or prepares food outside the plant body.',                               x:0, y:0 },
+  { id:'M1.05', cluster:'M1', label:'Pre-Elaborated\nFood',         desc:'Food is already prepared in soil before root uptake.',                                 x:0, y:0 },
+  { id:'M1.06', cluster:'M1', label:'Passive\nAbsorption',          desc:'The plant passively receives prepared food rather than synthesising it.',              x:0, y:0 },
+  { id:'M1.07', cluster:'M1', label:'Roots as\nSole Organ',         desc:'Roots are the only or primary feeding organs.',                                        x:0, y:0 },
+  { id:'M1.08', cluster:'M1', label:'Leaves Have\nNo Nutritive Role',desc:'Leaves are not central to nutrition or mass-building.',                              x:0, y:0 },
+  { id:'M1.09', cluster:'M1', label:'No Internal\nChemistry',        desc:'The plant does not transform raw materials chemically into new substances.',          x:0, y:0 },
+  { id:'M1.10', cluster:'M1', label:'Growth as\nAccretion',          desc:'Growth is addition of prepared material, not transformation.',                        x:0, y:0 },
+  { id:'M1.14', cluster:'M1', label:'Water as\nVehicle Only',        desc:'Water\'s role is to carry soil nourishment, not to be the main substance.',          x:0, y:0 },
+  { id:'M1.15', cluster:'M1', label:'Manure & Ash\nFertility',       desc:'Manure, compost, ash improve growth — so soil materials must build plants.',         x:0, y:0 },
+  { id:'M1.17', cluster:'M1', label:'Aquatic Plant\nPressure',       desc:'Aquatic plants challenge soil dependence — interpreted as water-carried nourishment.',x:0, y:0 },
+  { id:'M1.18', cluster:'M1', label:'Nutrients\nas Vitamins',        desc:'Soil nutrients are essential but confused with the main source of mass.',             x:0, y:0 },
 
-  // Edges: [sourceId, targetId]
-  const edges = [
-    [0, 2],   // Like Nourishes Like → Humus as Plant Food
-    [0, 1],   // Like Nourishes Like → Plant–Animal Analogy
-    [1, 2],   // Plant–Animal Analogy → Humus as Plant Food
-    [1, 4],   // Plant–Animal Analogy → Earth as External Stomach
-    [1, 7],   // Plant–Animal Analogy → No Excretion
-    [2, 3],   // Humus as Plant Food → Soil as Sole Source
-    [2, 14],  // Humus as Plant Food → Diversity of Soil Substances
-    [3, 4],   // Soil as Sole Source → Earth as External Stomach
-    [3, 11],  // Soil as Sole Source → Roots as Sole Organ
-    [4, 5],   // Earth as External Stomach → Pre-Elaborated Food
-    [4, 6],   // Earth as External Stomach → Passive Absorption
-    [5, 6],   // Pre-Elaborated Food → Passive Absorption
-    [5, 10],  // Pre-Elaborated Food → Growth as Accretion
-    [6, 10],  // Passive Absorption → Growth as Accretion
-    [6, 9],   // Passive Absorption → No Internal Chemistry
-    [7, 8],   // No Excretion → Perfect Selectivity
-    [8, 6],   // Perfect Selectivity → Passive Absorption
-    [8, 9],   // Perfect Selectivity → No Internal Chemistry
-    [8, 11],  // Perfect Selectivity → Roots as Sole Organ
-    [9, 10],  // No Internal Chemistry → Growth as Accretion
-    [9, 12],  // No Internal Chemistry → Leaves Have No Nutritive Role
-    [11, 12], // Roots as Sole Organ → Leaves Have No Nutritive Role
-    [3, 12],  // Soil as Sole Source → Leaves Have No Nutritive Role
-    [13, 2],  // Water as Vehicle Only → Humus as Plant Food
-    [13, 3],  // Water as Vehicle Only → Soil as Sole Source
-    [13, 14], // Water as Vehicle Only → Diversity of Soil Substances
-    [15, 3],  // Ignorance of Atmospheric Gases → Soil as Sole Source
-    [15, 12], // Ignorance of Atmospheric Gases → Leaves Have No Nutritive Role
-    [15, 9],  // Ignorance of Atmospheric Gases → No Internal Chemistry
-  ];
+  // M2 Water cluster
+  { id:'M2.00', cluster:'M2', label:'Water as\nSole Source',         desc:'Plant body comes mainly or entirely from water.',                                     x:0, y:0 },
+  { id:'M2.02', cluster:'M2', label:'Visible Water\nDependence',     desc:'Plants wilt without water and revive when watered.',                                  x:0, y:0 },
+  { id:'M2.04', cluster:'M2', label:'Van Helmont\nBalance',           desc:'Willow gained mass while soil stayed nearly constant.',                               x:0, y:0 },
+  { id:'M2.05', cluster:'M2', label:'Soil Mass\nUnchanged',           desc:'Soil loss was too small to explain plant gain.',                                      x:0, y:0 },
+  { id:'M2.06', cluster:'M2', label:'Added Input\nWas Water',         desc:'Water was the only visible added input.',                                             x:0, y:0 },
+  { id:'M2.08', cluster:'M2', label:'Water Carries\nDissolved Earth', desc:'Water carries hidden soil nutrients or particles.',                                   x:0, y:0 },
+  { id:'M2.09', cluster:'M2', label:'Fresh vs\nDry Mass',             desc:'Plant wetness is confused with dry biomass source.',                                  x:0, y:0 },
 
-  // ─── Canvas setup ───
-  const canvas = document.getElementById('network-canvas');
-  const ctx = canvas.getContext('2d');
-  const container = document.getElementById('canvas-container');
-  const tooltip = document.getElementById('tooltip');
-  const tooltipTitle = document.getElementById('tooltip-title');
-  const tooltipDesc = document.getElementById('tooltip-desc');
-  const tooltipConns = document.getElementById('tooltip-connections');
+  // M3 Air cluster
+  { id:'M3.00', cluster:'M3', label:'Air as\nEmpty Space',            desc:'Air is treated as nothing or near nothing.',                                          x:0, y:0 },
+  { id:'M3.01', cluster:'M3', label:'Air as\nWeightless',             desc:'Air seems to have no weight and cannot explain mass.',                                x:0, y:0 },
+  { id:'M3.03', cluster:'M3', label:'Invisible Cannot\nBuild Visible', desc:'Invisible inputs are discounted as sources of solid bodies.',                       x:0, y:0 },
+  { id:'M3.08', cluster:'M3', label:'Gas Exchange\nIgnored',           desc:'Intake and release of gases are not counted as material exchange.',                 x:0, y:0 },
+  { id:'M3.09', cluster:'M3', label:'Carbon in Air\nIs Unintuitive',  desc:'It is hard to imagine carbon stored in invisible air.',                              x:0, y:0 },
+  { id:'M3.10', cluster:'M3', label:'Atmosphere\nNot Weighed',        desc:'Experiments count soil and water but omit atmospheric input.',                       x:0, y:0 },
+  { id:'M3.12', cluster:'M3', label:'Air as Invisible\nStorehouse',   desc:'Corrective bridge: air can be imagined as a storehouse of carbon.',                 x:0, y:0 },
+  { id:'M3.13', cluster:'M3', label:'Leaf as\nDoorway',               desc:'Corrective bridge: leaves are the entry point for atmospheric CO₂.',                x:0, y:0 },
 
-  let W, H, dpr;
-  let hoveredNode = null;
-  let mouseX = 0, mouseY = 0;
-  let animTime = 0;
+  // M4 Light cluster
+  { id:'M4.01', cluster:'M4', label:'Sun Causes\nGrowth',             desc:'Because plants grow in sunlight, sunlight is mistaken as material source.',          x:0, y:0 },
+  { id:'M4.05', cluster:'M4', label:'Energy\nBecomes Mass',           desc:'Energy is assumed to convert directly into plant mass.',                             x:0, y:0 },
+  { id:'M4.07', cluster:'M4', label:'Darkness\nMeans No Food',        desc:'Darkness stopping photosynthesis is misread as proof light is the food.',            x:0, y:0 },
+  { id:'M4.08', cluster:'M4', label:'Leaf as\nWorkshop',              desc:'Corrective bridge: leaves rearrange matter using light energy.',                     x:0, y:0 },
+  { id:'M4.09', cluster:'M4', label:'Light as\nWorker',               desc:'Corrective bridge: light powers work but is not the brick.',                        x:0, y:0 },
+  { id:'M4.10', cluster:'M4', label:'Matter-Energy\nConfusion',       desc:'The student has not separated matter inputs from energy input.',                     x:0, y:0 },
 
-  function resize() {
-    const rect = container.getBoundingClientRect();
-    dpr = window.devicePixelRatio || 1;
-    W = rect.width;
-    H = rect.height;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    layoutNodes();
-  }
+  // Integration
+  { id:'I.00',  cluster:'I',  label:'Four Offices:\nSoil Water Air Light', desc:'Soil, water, air, and light each receive a distinct role.',                    x:0, y:0 },
+  { id:'I.01',  cluster:'I',  label:'Necessary\nvs Sufficient',       desc:'Something can be essential without being the main source of mass.',                  x:0, y:0 },
+  { id:'I.02',  cluster:'I',  label:'Matter-Energy\nDistinction',     desc:'Matter inputs and energy input must be separated.',                                  x:0, y:0 },
+];
 
-  // ─── Layout: force-directed (simple spring model) ───
-  function layoutNodes() {
-    // Initial placement in a roughly circular pattern with some variety
-    const cx = W / 2;
-    const cy = H / 2;
-    const radiusX = Math.min(W, 900) * 0.38;
-    const radiusY = Math.min(H, 700) * 0.38;
+// Edges: {s, t, weight, type, crossCluster}
+const EDGES = [
+  // M1 within
+  { s:'M1.00', t:'M1.01', w:0.88, type:'supports' },
+  { s:'M1.00', t:'M1.07', w:0.86, type:'supports' },
+  { s:'M1.01', t:'M1.15', w:0.86, type:'supports' },
+  { s:'M1.01', t:'M1.02', w:0.80, type:'implies' },
+  { s:'M1.02', t:'M1.03', w:0.72, type:'implies' },
+  { s:'M1.03', t:'M1.04', w:0.92, type:'implies' },
+  { s:'M1.04', t:'M1.05', w:0.90, type:'implies' },
+  { s:'M1.05', t:'M1.06', w:0.88, type:'implies' },
+  { s:'M1.06', t:'M1.09', w:0.82, type:'hides' },
+  { s:'M1.09', t:'M1.10', w:0.84, type:'implies' },
+  { s:'M1.07', t:'M1.08', w:0.78, type:'implies' },
+  { s:'M1.07', t:'M1.14', w:0.68, type:'supports' },
+  { s:'M1.08', t:'M1.09', w:0.74, type:'supports' },
+  { s:'M1.15', t:'M1.17', w:0.84, type:'retreats_to' },
 
-    nodes.forEach((n, i) => {
-      const angle = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
-      // Add slight radial variation for visual interest
-      const rVar = 0.85 + (Math.sin(i * 2.7) * 0.15);
-      n.x = cx + Math.cos(angle) * radiusX * rVar;
-      n.y = cy + Math.sin(angle) * radiusY * rVar;
-      n.vx = 0;
-      n.vy = 0;
+  // M2 within
+  { s:'M2.02', t:'M2.00', w:0.84, type:'supports' },
+  { s:'M2.04', t:'M2.05', w:0.92, type:'supports' },
+  { s:'M2.04', t:'M2.06', w:0.94, type:'supports' },
+  { s:'M2.05', t:'M2.00', w:0.82, type:'supports' },
+  { s:'M2.06', t:'M2.00', w:0.86, type:'supports' },
+  { s:'M2.08', t:'M2.00', w:0.76, type:'retreats_to' },
+
+  // M3 within
+  { s:'M3.00', t:'M3.01', w:0.90, type:'supports' },
+  { s:'M3.01', t:'M3.03', w:0.88, type:'supports' },
+  { s:'M3.03', t:'M3.09', w:0.86, type:'supports' },
+  { s:'M3.08', t:'M3.10', w:0.84, type:'supports' },
+  { s:'M3.09', t:'M3.12', w:0.86, type:'corrective_bridge' },
+  { s:'M3.12', t:'M3.13', w:0.84, type:'corrective_bridge' },
+
+  // M4 within
+  { s:'M4.01', t:'M4.07', w:0.76, type:'supports' },
+  { s:'M4.05', t:'M4.10', w:0.90, type:'supports' },
+  { s:'M4.08', t:'M4.09', w:0.88, type:'corrective_bridge' },
+  { s:'M4.09', t:'M4.10', w:0.86, type:'challenges' },
+  { s:'M4.08', t:'M4.01', w:0.78, type:'bridges_to' },
+
+  // Cross-cluster (shown with weight labels)
+  { s:'M1.18', t:'M3.09', w:0.90, type:'bridges_to', cross:true },
+  { s:'M1.17', t:'M2.08', w:0.88, type:'bridges_to', cross:true },
+  { s:'M2.04', t:'M3.10', w:0.94, type:'bridges_to', cross:true },
+  { s:'M2.09', t:'M3.09', w:0.72, type:'bridges_to', cross:true },
+  { s:'M3.10', t:'M2.04', w:0.88, type:'bridges_to', cross:true },
+  { s:'M3.13', t:'M4.08', w:0.90, type:'bridges_to', cross:true },
+  { s:'M4.09', t:'I.02',  w:0.92, type:'corrective_bridge', cross:true },
+  { s:'M4.10', t:'I.00',  w:0.88, type:'corrective_bridge', cross:true },
+  { s:'M1.18', t:'I.01',  w:0.82, type:'bridges_to', cross:true },
+  { s:'I.00',  t:'M1.15', w:0.58, type:'bridges_to', cross:true, dashed:true },
+];
+
+// ── Canvas setup ──────────────────────────────────────────
+const canvas = document.getElementById('network-canvas');
+const ctx = canvas.getContext('2d');
+
+let W, H, nodes, edges, tooltip, hoveredNode = null, animFrame;
+
+function resize() {
+  W = canvas.width  = canvas.offsetWidth;
+  H = canvas.height = canvas.offsetHeight;
+  layoutNodes();
+  draw();
+}
+
+// ── Cluster layout: position nodes in 5 regions ──────────
+function layoutNodes() {
+  // Define cluster centres as fraction of canvas
+  const centres = {
+    M1: { cx: 0.22, cy: 0.42 },
+    M2: { cx: 0.50, cy: 0.35 },
+    M3: { cx: 0.75, cy: 0.38 },
+    M4: { cx: 0.72, cy: 0.72 },
+    I:  { cx: 0.45, cy: 0.78 },
+  };
+
+  // Group nodes by cluster
+  const byCluster = {};
+  NODES.forEach(n => { (byCluster[n.cluster] = byCluster[n.cluster]||[]).push(n); });
+
+  Object.entries(byCluster).forEach(([cl, list]) => {
+    const c = centres[cl];
+    const cx = c.cx * W, cy = c.cy * H;
+    const count = list.length;
+    // Spread in a circle, radius scales with count
+    const r = Math.min(W, H) * (cl === 'I' ? 0.07 : 0.12 + count * 0.008);
+    list.forEach((n, i) => {
+      const angle = (2 * Math.PI * i / count) - Math.PI / 2;
+      n.x = cx + r * Math.cos(angle);
+      n.y = cy + r * Math.sin(angle);
+      n.r = getRadius(n);
+      n.vx = 0; n.vy = 0;
     });
+  });
+}
 
-    // Run force simulation
-    for (let iter = 0; iter < 300; iter++) {
-      const alpha = 1 - iter / 300;
+function getRadius(n) {
+  // Integration nodes slightly larger
+  if (n.cluster === 'I') return 22;
+  // Entry/key nodes
+  const key = ['M1.00','M1.04','M2.04','M3.09','M4.10'];
+  return key.includes(n.id) ? 20 : 15;
+}
 
-      // Repulsion between all node pairs
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          let dx = nodes[j].x - nodes[i].x;
-          let dy = nodes[j].y - nodes[i].y;
-          let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          let repStrength = W < 500 ? 18000 : 12000;
-      let force = repStrength / (dist * dist);
-          let fx = (dx / dist) * force;
-          let fy = (dy / dist) * force;
-          nodes[i].vx -= fx;
-          nodes[i].vy -= fy;
-          nodes[j].vx += fx;
-          nodes[j].vy += fy;
-        }
+// ── Force simulation (short warm-up) ─────────────────────
+function runForces(iterations) {
+  const nodeMap = {};
+  NODES.forEach(n => nodeMap[n.id] = n);
+  const builtEdges = EDGES.map(e => ({ s: nodeMap[e.s], t: nodeMap[e.t], ...e }))
+                          .filter(e => e.s && e.t);
+
+  for (let iter = 0; iter < iterations; iter++) {
+    // Repulsion between all nodes
+    for (let i = 0; i < NODES.length; i++) {
+      for (let j = i+1; j < NODES.length; j++) {
+        const a = NODES[i], b = NODES[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const force = 3000 / (dist * dist);
+        const fx = (dx/dist)*force, fy = (dy/dist)*force;
+        a.vx -= fx; a.vy -= fy;
+        b.vx += fx; b.vy += fy;
       }
-
-      // Attraction along edges
-      edges.forEach(([a, b]) => {
-        let dx = nodes[b].x - nodes[a].x;
-        let dy = nodes[b].y - nodes[a].y;
-        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        let idealDist = Math.min(W, H) * 0.18;
-        let force = (dist - idealDist) * 0.005;
-        let fx = (dx / dist) * force;
-        let fy = (dy / dist) * force;
-        nodes[a].vx += fx;
-        nodes[a].vy += fy;
-        nodes[b].vx -= fx;
-        nodes[b].vy -= fy;
-      });
-
-      // Center gravity
-      nodes.forEach(n => {
-        n.vx += (cx - n.x) * 0.002;
-        n.vy += (cy - n.y) * 0.002;
-      });
-
-      // Apply velocity with damping
-      nodes.forEach(n => {
-        n.vx *= 0.85;
-        n.vy *= 0.85;
-        n.x += n.vx * alpha;
-        n.y += n.vy * alpha;
-
-        // Boundary constraints with padding
-        const pad = 60;
-        n.x = Math.max(pad, Math.min(W - pad, n.x));
-        n.y = Math.max(pad, Math.min(H - pad, n.y));
-      });
     }
-  }
-
-  // ─── Drawing ───
-  function getConnectedEdges(nodeId) {
-    return edges.filter(([a, b]) => a === nodeId || b === nodeId);
-  }
-
-  function getConnectedNodeIds(nodeId) {
-    const ids = new Set();
-    edges.forEach(([a, b]) => {
-      if (a === nodeId) ids.add(b);
-      if (b === nodeId) ids.add(a);
+    // Same-cluster attraction (spring)
+    builtEdges.forEach(e => {
+      if (e.cross) return; // skip cross-cluster for spring
+      const dx = e.t.x - e.s.x, dy = e.t.y - e.s.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const target = 90;
+      const force = (dist - target) * 0.04;
+      const fx = (dx/dist)*force, fy = (dy/dist)*force;
+      e.s.vx += fx; e.s.vy += fy;
+      e.t.vx -= fx; e.t.vy -= fy;
     });
-    return ids;
-  }
-
-  function draw() {
-    animTime += 0.015;
-    ctx.clearRect(0, 0, W, H);
-
-    const connectedIds = hoveredNode !== null ? getConnectedNodeIds(hoveredNode.id) : new Set();
-    const isHovering = hoveredNode !== null;
-
-    // Draw edges
-    edges.forEach(([a, b]) => {
-      const na = nodes[a];
-      const nb = nodes[b];
-      const isHighlighted = isHovering && (a === hoveredNode.id || b === hoveredNode.id);
-      const isDimmed = isHovering && !isHighlighted;
-
-      ctx.beginPath();
-      ctx.moveTo(na.x, na.y);
-      ctx.lineTo(nb.x, nb.y);
-
-      if (isHighlighted) {
-        // Glowing highlighted edge
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.8)';
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = 'rgba(6, 182, 212, 0.5)';
-        ctx.shadowBlur = 12;
-      } else if (isDimmed) {
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.06)';
-        ctx.lineWidth = 1;
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-      } else {
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.18)';
-        ctx.lineWidth = 1;
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-      }
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+    // Cluster-centre gravity
+    const centres = { M1:{cx:0.22,cy:0.42}, M2:{cx:0.50,cy:0.35}, M3:{cx:0.75,cy:0.38}, M4:{cx:0.72,cy:0.72}, I:{cx:0.45,cy:0.78} };
+    NODES.forEach(n => {
+      const c = centres[n.cluster];
+      n.vx += (c.cx * W - n.x) * 0.015;
+      n.vy += (c.cy * H - n.y) * 0.015;
+      n.x += n.vx; n.y += n.vy;
+      n.vx *= 0.6; n.vy *= 0.6;
+      // Clamp to canvas
+      n.x = Math.max(n.r+10, Math.min(W - n.r - 10, n.x));
+      n.y = Math.max(n.r+10, Math.min(H - n.r - 10, n.y));
     });
+  }
+}
 
-    // Draw nodes
-    nodes.forEach(n => {
-      const isActive = isHovering && hoveredNode.id === n.id;
-      const isConnected = isHovering && connectedIds.has(n.id);
-      const isDimmed = isHovering && !isActive && !isConnected;
+// ── Drawing ───────────────────────────────────────────────
+function edgeColor(e) {
+  if (e.cross) return '#e8ffff';
+  return CLUSTER_COLORS[NODES.find(n=>n.id===e.s)?.cluster]?.stroke || '#e8ffff';
+}
 
-      // Node radius
-      const baseRadius = isActive ? 18 : (isConnected ? 13 : 10);
-      const pulseRadius = isActive ? baseRadius + Math.sin(animTime * 3) * 2 : baseRadius;
+function draw() {
+  ctx.clearRect(0, 0, W, H);
 
-      // Outer glow
-      if (isActive || isConnected) {
-        const glowGrad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, pulseRadius * 3);
-        glowGrad.addColorStop(0, isActive ? 'rgba(6, 182, 212, 0.35)' : 'rgba(45, 212, 191, 0.2)');
-        glowGrad.addColorStop(1, 'rgba(6, 182, 212, 0)');
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, pulseRadius * 3, 0, Math.PI * 2);
-        ctx.fillStyle = glowGrad;
-        ctx.fill();
-      }
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#071827');
+  bg.addColorStop(1, '#0b1f35');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
 
-      // Node body
-      const grad = ctx.createRadialGradient(n.x - pulseRadius * 0.3, n.y - pulseRadius * 0.3, 0, n.x, n.y, pulseRadius);
-      if (isDimmed) {
-        grad.addColorStop(0, 'rgba(40, 70, 120, 0.5)');
-        grad.addColorStop(1, 'rgba(20, 40, 80, 0.3)');
+  const nodeMap = {};
+  NODES.forEach(n => nodeMap[n.id] = n);
+  const builtEdges = EDGES.map(e => ({ ...e, sn: nodeMap[e.s], tn: nodeMap[e.t] }))
+                          .filter(e => e.sn && e.tn);
+
+  // Draw cluster halos
+  const clusterGroups = {};
+  NODES.forEach(n => { (clusterGroups[n.cluster] = clusterGroups[n.cluster]||[]).push(n); });
+  Object.entries(clusterGroups).forEach(([cl, list]) => {
+    const col = CLUSTER_COLORS[cl];
+    const cx = list.reduce((s,n)=>s+n.x,0)/list.length;
+    const cy = list.reduce((s,n)=>s+n.y,0)/list.length;
+    const maxR = Math.max(...list.map(n => Math.sqrt((n.x-cx)**2+(n.y-cy)**2))) + 40;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+    grad.addColorStop(0, col.fill + '18');
+    grad.addColorStop(1, col.fill + '00');
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  });
+
+  // Draw edges
+  builtEdges.forEach(e => {
+    const { sn, tn, w, cross, dashed } = e;
+    const col = edgeColor(e);
+    const isHovered = hoveredNode && (sn.id === hoveredNode.id || tn.id === hoveredNode.id);
+    const isConnected = isHovered;
+    const alpha = hoveredNode ? (isConnected ? 1.0 : 0.15) : 0.65;
+    const lineW = cross ? Math.max(2, w * 6) : Math.max(1.5, w * 4);
+
+    // Arrow direction: offset from centre toward edge of circle
+    const dx = tn.x - sn.x, dy = tn.y - sn.y;
+    const dist = Math.sqrt(dx*dx+dy*dy)||1;
+    const sx = sn.x + (dx/dist)*sn.r;
+    const sy = sn.y + (dy/dist)*sn.r;
+    const tx = tn.x - (dx/dist)*(tn.r+8);
+    const ty = tn.y - (dy/dist)*(tn.r+8);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = lineW;
+    if (dashed) ctx.setLineDash([8, 8]);
+    else ctx.setLineDash([]);
+
+    // Slight curve for cross-cluster edges
+    ctx.beginPath();
+    if (cross) {
+      const mx = (sx+tx)/2 + (dy/dist)*30;
+      const my = (sy+ty)/2 - (dx/dist)*30;
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(mx, my, tx, ty);
+    } else {
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrowhead
+    const angle = Math.atan2(ty-sy, tx-sx);
+    const aLen = 10 + lineW;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - aLen*Math.cos(angle-0.35), ty - aLen*Math.sin(angle-0.35));
+    ctx.lineTo(tx - aLen*Math.cos(angle+0.35), ty - aLen*Math.sin(angle+0.35));
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Weight label on cross-cluster edges
+    if (cross && w >= 0.70) {
+      let lx, ly;
+      if (cross) {
+        const mx = (sx+tx)/2 + (dy/dist)*30;
+        const my = (sy+ty)/2 - (dx/dist)*30;
+        lx = mx; ly = my;
       } else {
-        grad.addColorStop(0, isActive ? '#06B6D4' : (isConnected ? '#1e9ab0' : '#1882a0'));
-        grad.addColorStop(1, isActive ? '#2DD4BF' : (isConnected ? '#15736a' : '#0d5060'));
+        lx = (sx+tx)/2; ly = (sy+ty)/2;
       }
-
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, pulseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      if (!isDimmed) {
-        ctx.strokeStyle = isActive ? 'rgba(255,255,255,0.6)' : 'rgba(6, 182, 212, 0.4)';
-        ctx.lineWidth = isActive ? 2 : 1;
-        ctx.stroke();
-      }
-
-      // Label
-      const labelAlpha = isDimmed ? 0.2 : (isActive ? 1 : (isConnected ? 0.9 : 0.7));
-      ctx.fillStyle = `rgba(240, 244, 248, ${labelAlpha})`;
-      ctx.font = `${isActive ? 'bold ' : ''}${isActive ? '13px' : '11px'} 'Didact Gothic', sans-serif`;
+      ctx.font = 'bold 11px "Didact Gothic", Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = '#071827';
+      ctx.lineWidth = 4;
+      ctx.strokeText(w.toFixed(2), lx, ly);
+      ctx.fillStyle = '#c9eef7';
+      ctx.fillText(w.toFixed(2), lx, ly);
+    }
 
-      // Word wrap for labels
-      const label = n.name;
-      const maxLabelWidth = isActive ? 150 : 110;
-      const words = label.split(' ');
-      const lines = [];
-      let currentLine = words[0];
-      for (let i = 1; i < words.length; i++) {
-        const testLine = currentLine + ' ' + words[i];
-        if (ctx.measureText(testLine).width > maxLabelWidth) {
-          lines.push(currentLine);
-          currentLine = words[i];
-        } else {
-          currentLine = testLine;
-        }
-      }
-      lines.push(currentLine);
+    ctx.restore();
+  });
 
-      const lineHeight = isActive ? 15 : 13;
-      const labelY = n.y + pulseRadius + 6;
-      lines.forEach((line, li) => {
-        ctx.fillText(line, n.x, labelY + li * lineHeight);
-      });
+  // Draw nodes
+  NODES.forEach(n => {
+    const col = CLUSTER_COLORS[n.cluster];
+    const isHovered = hoveredNode && n.id === hoveredNode.id;
+    const isConnected = hoveredNode && builtEdges.some(e =>
+      (e.sn.id === hoveredNode.id && e.tn.id === n.id) ||
+      (e.tn.id === hoveredNode.id && e.sn.id === n.id)
+    );
+    const dimmed = hoveredNode && !isHovered && !isConnected;
+    const alpha = dimmed ? 0.25 : 1.0;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Glow
+    if (isHovered || isConnected) {
+      const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r*3);
+      glow.addColorStop(0, col.fill + '55');
+      glow.addColorStop(1, col.fill + '00');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r*3, 0, Math.PI*2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+    }
+
+    // Node circle
+    const nodeGrad = ctx.createRadialGradient(n.x - n.r*0.3, n.y - n.r*0.3, 0, n.x, n.y, n.r);
+    nodeGrad.addColorStop(0, col.stroke);
+    nodeGrad.addColorStop(1, col.fill);
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+    ctx.fillStyle = nodeGrad;
+    ctx.fill();
+    ctx.strokeStyle = isHovered ? '#ffffff' : col.stroke;
+    ctx.lineWidth = isHovered ? 2.5 : 1.4;
+    ctx.stroke();
+
+    // Label
+    const lines = n.label.split('\n');
+    ctx.font = `${n.r > 18 ? 11 : 10}px "Didact Gothic", Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e8fbff';
+    const labelY = n.y + n.r + 14;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, n.x, labelY + i*13 - (lines.length-1)*6.5);
     });
 
-    requestAnimationFrame(draw);
+    ctx.restore();
+  });
+
+  // Cluster title labels
+  const centres = { M1:{cx:0.22,cy:0.42}, M2:{cx:0.50,cy:0.35}, M3:{cx:0.75,cy:0.38}, M4:{cx:0.72,cy:0.72}, I:{cx:0.45,cy:0.78} };
+  Object.entries(CLUSTER_COLORS).forEach(([cl, col]) => {
+    const c = centres[cl];
+    if (!c) return;
+    ctx.save();
+    ctx.globalAlpha = hoveredNode ? 0.4 : 0.85;
+    ctx.font = 'bold 13px "Didact Gothic", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = col.stroke;
+    ctx.fillText(col.label, c.cx * W, c.cy * H - 110);
+    ctx.restore();
+  });
+}
+
+// ── Tooltip / Hover ───────────────────────────────────────
+function getHovered(mx, my) {
+  for (let i = NODES.length-1; i >= 0; i--) {
+    const n = NODES[i];
+    if ((mx-n.x)**2 + (my-n.y)**2 <= (n.r+6)**2) return n;
   }
+  return null;
+}
 
-  // ─── Hit testing ───
-  function getNodeAt(mx, my) {
-    // Check in reverse order so topmost drawn node is found first
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i];
-      const dx = mx - n.x;
-      const dy = my - n.y;
-      const hitRadius = 24; // generous hit area
-      if (dx * dx + dy * dy <= hitRadius * hitRadius) {
-        return n;
-      }
-    }
-    return null;
+function showTooltip(n, px, py) {
+  const tip = document.getElementById('tooltip');
+  if (!tip) return;
+  tip.querySelector('.tip-title').textContent = n.label.replace('\n',' ');
+  tip.querySelector('.tip-cluster').textContent = CLUSTER_COLORS[n.cluster].label;
+  tip.querySelector('.tip-desc').textContent = n.desc;
+  tip.style.display = 'block';
+  const rect = canvas.getBoundingClientRect();
+  let left = px + 16, top = py - 10;
+  if (left + 260 > rect.right) left = px - 270;
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+}
+
+function hideTooltip() {
+  const tip = document.getElementById('tooltip');
+  if (tip) tip.style.display = 'none';
+}
+
+function onMove(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+  const my = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+  const found = getHovered(mx, my);
+  if (found !== hoveredNode) {
+    hoveredNode = found;
+    if (found) { showTooltip(found, e.clientX||e.touches?.[0]?.clientX, e.clientY||e.touches?.[0]?.clientY); canvas.style.cursor='pointer'; }
+    else        { hideTooltip(); canvas.style.cursor='default'; }
+    draw();
+  } else if (found) {
+    showTooltip(found, e.clientX||e.touches?.[0]?.clientX, e.clientY||e.touches?.[0]?.clientY);
   }
+}
 
-  function handleMouseMove(e) {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
-    mouseY = e.clientY - rect.top;
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('touchmove', e => { e.preventDefault(); onMove(e); }, { passive:false });
+canvas.addEventListener('mouseleave', () => { hoveredNode=null; hideTooltip(); draw(); });
 
-    const node = getNodeAt(mouseX, mouseY);
+// ── Legend ────────────────────────────────────────────────
+function drawLegend() {
+  const leg = document.getElementById('network-legend');
+  if (!leg) return;
+  leg.innerHTML = Object.entries(CLUSTER_COLORS).map(([cl,col]) =>
+    `<span class="leg-item"><span class="leg-dot" style="background:${col.fill};box-shadow:0 0 6px ${col.stroke}88;border:1.5px solid ${col.stroke}"></span>${col.label}</span>`
+  ).join('') +
+  `<span class="leg-item"><span class="leg-line" style="background:#e8ffff"></span>Cross-cluster link (weight shown)</span>`;
+}
 
-    if (node) {
-      canvas.style.cursor = 'pointer';
-      hoveredNode = node;
-      showTooltip(node, e.clientX, e.clientY);
-    } else {
-      canvas.style.cursor = 'default';
-      hoveredNode = null;
-      hideTooltip();
-    }
-  }
-
-  function handleMouseLeave() {
-    hoveredNode = null;
-    hideTooltip();
-    canvas.style.cursor = 'default';
-  }
-
-  // ─── Tooltip ───
-  function showTooltip(node, clientX, clientY) {
-    tooltipTitle.textContent = node.name;
-    tooltipDesc.textContent = node.desc;
-
-    // Build connections list
-    const connIds = getConnectedNodeIds(node.id);
-    const connNames = [...connIds].map(id => nodes[id].name);
-    if (connNames.length > 0) {
-      tooltipConns.innerHTML = 'Connected to: ' + connNames.map(n => `<span>${n}</span>`).join(', ');
-    } else {
-      tooltipConns.innerHTML = '';
-    }
-
-    // Position tooltip
-    const containerRect = container.getBoundingClientRect();
-    let tx = clientX - containerRect.left + 16;
-    let ty = clientY - containerRect.top - 10;
-
-    // Avoid overflow
-    const tw = 320;
-    if (tx + tw > containerRect.width) tx = clientX - containerRect.left - tw - 16;
-    if (ty + 200 > containerRect.height) ty = containerRect.height - 210;
-    if (ty < 10) ty = 10;
-
-    tooltip.style.left = tx + 'px';
-    tooltip.style.top = ty + 'px';
-    tooltip.classList.add('visible');
-  }
-
-  function hideTooltip() {
-    tooltip.classList.remove('visible');
-  }
-
-  // ─── Touch support ───
-  function handleTouchStart(e) {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    mouseX = touch.clientX - rect.left;
-    mouseY = touch.clientY - rect.top;
-
-    const node = getNodeAt(mouseX, mouseY);
-    if (node) {
-      hoveredNode = node;
-      showTooltip(node, touch.clientX, touch.clientY);
-    } else {
-      hoveredNode = null;
-      hideTooltip();
-    }
-  }
-
-  // ─── Init ───
-  function init() {
-    resize();
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseleave', handleMouseLeave);
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    window.addEventListener('resize', () => {
-      resize();
-    });
-    requestAnimationFrame(draw);
-  }
-
-  init();
-})();
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  resize();
+  runForces(300);
+  draw();
+  drawLegend();
+});
+window.addEventListener('resize', () => { resize(); runForces(150); draw(); });

@@ -1,81 +1,406 @@
-(function(){'use strict';
-var nodes=[{"id": 0, "name": "Water as Arche", "desc": "Thales' foundational cosmological claim: water is the single fundamental substance underlying all of reality. All matter is water in different configurations."}, {"id": 1, "name": "Water as Sole Food", "desc": "Plants derive all of their food \u2014 and therefore all of their substance \u2014 from water alone. No other substance contributes to plant mass."}, {"id": 2, "name": "Single-Substance Theory", "desc": "The theoretical virtue of explaining plant growth with one material cause, reflecting the parsimony of the arche framework."}, {"id": 3, "name": "Observable Evidence", "desc": "Direct observation that applying water to plants causes them to increase in size and mass, interpreted as water being converted into plant tissue."}, {"id": 4, "name": "Water in Three States", "desc": "Water visibly transforms between liquid, vapour, and solid, suggesting it can transform into other apparent substances, including plant tissue."}, {"id": 5, "name": "Exclusion of Soil", "desc": "Soil provides no nutritive substance to plants; it is merely the medium through which water reaches roots."}, {"id": 6, "name": "Exclusion of Air", "desc": "Air was not understood as a material substance that plants could absorb and incorporate into their mass."}, {"id": 7, "name": "Exclusion of Sunlight", "desc": "Sunlight was recognised as warmth but not as a driver of material transformation. Light has no mass and cannot obviously be converted into wood."}, {"id": 8, "name": "Passive Plant Role", "desc": "Plants are not active organisms that synthesise complex molecules; they passively receive and accumulate their single food source (water)."}, {"id": 9, "name": "Growth as Water Accumulation", "desc": "An increase in plant mass is understood as the accumulation and transformation of absorbed water into plant tissue."}, {"id": 10, "name": "Water Cycle Connection", "desc": "Water moves through the environment \u2014 rain, rivers, groundwater, evaporation \u2014 reinforcing water as the universal substrate."}, {"id": 11, "name": "Seed Germination Requires Water", "desc": "Seeds germinate only in the presence of moisture. The first act of plant growth depends on water."}, {"id": 12, "name": "Fertility Follows Water", "desc": "The geographic correlation between water availability (Nile floods, seasonal rains) and plant fertility was interpreted as confirmation."}, {"id": 13, "name": "Van Helmont Echo", "desc": "Van Helmont's 1648 willow experiment reached the same conclusion by controlled measurement, showing the hypothesis survived 2,000 years."}];
-var edges=[[0, 1], [0, 2], [0, 4], [0, 9], [1, 2], [1, 3], [1, 5], [1, 6], [1, 7], [1, 8], [1, 9], [2, 5], [2, 6], [2, 7], [3, 9], [3, 10], [3, 12], [4, 0], [4, 2], [5, 6], [5, 8], [6, 7], [7, 8], [8, 9], [9, 3], [9, 11], [10, 4], [10, 12], [11, 3], [11, 12], [13, 1], [13, 2], [13, 5], [13, 9]];
-var A1='#3B82F6',A2='#60A5FA',GR='59, 130, 246',A2R='96, 165, 250';
-var canvas=document.getElementById('network-canvas'),ctx=canvas.getContext('2d'),
-container=document.getElementById('canvas-container'),
-tooltip=document.getElementById('tooltip'),
-tooltipTitle=document.getElementById('tooltip-title'),
-tooltipDesc=document.getElementById('tooltip-desc'),
-tooltipConns=document.getElementById('tooltip-connections');
-var W,H,dpr,hoveredNode=null,mouseX=0,mouseY=0,animTime=0;
+/* =========================================================
+   Thales Weighted Misconception Network
+   4 clusters: W Water, M Moisture, S Seeds, Integration
+   Style: SVG reference — dark navy bg, coloured cluster nodes,
+          thick weighted arrows, edge-weight labels on cross-cluster links
+   ========================================================= */
 
-function resize(){var r=container.getBoundingClientRect();dpr=window.devicePixelRatio||1;W=r.width;H=r.height;
-canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
-ctx.setTransform(dpr,0,0,dpr,0,0);layoutNodes()}
+const CLUSTER_COLORS = {
+  W:  { fill: '#2563EB', stroke: '#60A5FA', label: 'W Water as Universal Principle' },
+  M:  { fill: '#1d4ed8', stroke: '#93C5FD', label: 'M Moisture & Life' },
+  S:  { fill: '#7c3aed', stroke: '#a78bfa', label: 'S Seeds & Germination' },
+  I:  { fill: '#6366f1', stroke: '#818cf8', label: 'Integration' },
+};
 
-function layoutNodes(){var cx=W/2,cy=H/2,rx=Math.min(W,900)*0.38,ry=Math.min(H,700)*0.38;
-nodes.forEach(function(n,i){var a=(i/nodes.length)*Math.PI*2-Math.PI/2,rv=0.85+Math.sin(i*2.7)*0.15;
-n.x=cx+Math.cos(a)*rx*rv;n.y=cy+Math.sin(a)*ry*rv;n.vx=0;n.vy=0});
-for(var iter=0;iter<300;iter++){var alpha=1-iter/300;
-for(var i=0;i<nodes.length;i++)for(var j=i+1;j<nodes.length;j++){
-var dx=nodes[j].x-nodes[i].x,dy=nodes[j].y-nodes[i].y,d=Math.sqrt(dx*dx+dy*dy)||1,
-rs=W<500?18000:12000,f=rs/(d*d),fx=dx/d*f,fy=dy/d*f;
-nodes[i].vx-=fx;nodes[i].vy-=fy;nodes[j].vx+=fx;nodes[j].vy+=fy}
-edges.forEach(function(e){var dx=nodes[e[1]].x-nodes[e[0]].x,dy=nodes[e[1]].y-nodes[e[0]].y,
-d=Math.sqrt(dx*dx+dy*dy)||1,id=Math.min(W,H)*0.18,f=(d-id)*0.005,fx=dx/d*f,fy=dy/d*f;
-nodes[e[0]].vx+=fx;nodes[e[0]].vy+=fy;nodes[e[1]].vx-=fx;nodes[e[1]].vy-=fy});
-nodes.forEach(function(n){n.vx+=(cx-n.x)*0.002;n.vy+=(cy-n.y)*0.002;
-n.vx*=0.85;n.vy*=0.85;n.x+=n.vx*alpha;n.y+=n.vy*alpha;
-var p=60;n.x=Math.max(p,Math.min(W-p,n.x));n.y=Math.max(p,Math.min(H-p,n.y))})}}
+const NODES = [
+  // W cluster
+  { id:'W.00', cluster:'W', label:'Water as\nUniversal Source',   desc:'All matter originates from water; water is the primary substance of the cosmos.', x:0, y:0 },
+  { id:'W.01', cluster:'W', label:'Water Transforms\nInto Earth',  desc:'Thales believed water solidifies or condenses to form earth and solid material.', x:0, y:0 },
+  { id:'W.02', cluster:'W', label:'Everything\nFloats on Water',   desc:'The earth floats on water; water underlies all existence.', x:0, y:0 },
+  { id:'W.03', cluster:'W', label:'Water Gives\nLife Directly',    desc:'Water is not just necessary — it IS the substance of life itself.', x:0, y:0 },
+  { id:'W.04', cluster:'W', label:'Wet Origins\nof the Cosmos',    desc:'The cosmos began as a watery chaos; dryness is derivative.', x:0, y:0 },
 
-function getConnectedNodeIds(nid){var s=new Set();edges.forEach(function(e){if(e[0]===nid)s.add(e[1]);if(e[1]===nid)s.add(e[0])});return s}
+  // M cluster
+  { id:'M.00', cluster:'M', label:'Moisture as\nEssence of Life', desc:'All living things require and ARE fundamentally moisture.', x:0, y:0 },
+  { id:'M.01', cluster:'M', label:'Wilting as\nWater Loss',        desc:'When plants wilt, they are losing their primary substance, not just a carrier fluid.', x:0, y:0 },
+  { id:'M.02', cluster:'M', label:'Irrigation\nBuilds Mass',       desc:'Watered fields produce more; therefore water directly builds plant body.', x:0, y:0 },
+  { id:'M.03', cluster:'M', label:'Flood Plain\nFertility',        desc:'Flood-plain soils support lush growth — proof water delivered from rivers builds life.', x:0, y:0 },
+  { id:'M.04', cluster:'M', label:'Sap as\nConcentrated Water',   desc:'The sap running in plants is just water in a more refined or concentrated form.', x:0, y:0 },
 
-function draw(){animTime+=0.015;ctx.clearRect(0,0,W,H);
-var cIds=hoveredNode!==null?getConnectedNodeIds(hoveredNode.id):new Set(),isH=hoveredNode!==null;
-edges.forEach(function(e){var na=nodes[e[0]],nb=nodes[e[1]],hl=isH&&(e[0]===hoveredNode.id||e[1]===hoveredNode.id),dm=isH&&!hl;
-ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.lineTo(nb.x,nb.y);
-if(hl){ctx.strokeStyle='rgba('+GR+',0.8)';ctx.lineWidth=2.5;ctx.shadowColor='rgba('+GR+',0.5)';ctx.shadowBlur=12}
-else if(dm){ctx.strokeStyle='rgba('+GR+',0.06)';ctx.lineWidth=1;ctx.shadowColor='transparent';ctx.shadowBlur=0}
-else{ctx.strokeStyle='rgba('+GR+',0.18)';ctx.lineWidth=1;ctx.shadowColor='transparent';ctx.shadowBlur=0}
-ctx.stroke();ctx.shadowBlur=0});
+  // S cluster
+  { id:'S.00', cluster:'S', label:'Seed Awakened\nby Water',      desc:'Seeds only germinate when watered — water awakens and provides the material for growth.', x:0, y:0 },
+  { id:'S.01', cluster:'S', label:'Germination Proves\nWater Builds', desc:'The rapid mass gain during germination appears to come entirely from water.', x:0, y:0 },
+  { id:'S.02', cluster:'S', label:'Dry Seeds\nAre Dead/Dormant',  desc:'Dryness equals dormancy or death; wetness equals life — so life substance is water.', x:0, y:0 },
+  { id:'S.03', cluster:'S', label:'Root Drinks\nWater for Mass',  desc:'Roots absorb water; this absorbed water must become the plant\'s solid body.', x:0, y:0 },
 
-nodes.forEach(function(n){var isA=isH&&hoveredNode.id===n.id,isC=isH&&cIds.has(n.id),isDm=isH&&!isA&&!isC;
-var br=isA?18:isC?13:10,pr=isA?br+Math.sin(animTime*3)*2:br;
-if(isA||isC){var gg=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,pr*3);
-gg.addColorStop(0,isA?'rgba('+GR+',0.35)':'rgba('+A2R+',0.2)');gg.addColorStop(1,'rgba('+GR+',0)');
-ctx.beginPath();ctx.arc(n.x,n.y,pr*3,0,Math.PI*2);ctx.fillStyle=gg;ctx.fill()}
-var g=ctx.createRadialGradient(n.x-pr*0.3,n.y-pr*0.3,0,n.x,n.y,pr);
-if(isDm){g.addColorStop(0,'rgba(60,60,80,0.5)');g.addColorStop(1,'rgba(30,30,50,0.3)')}
-else{g.addColorStop(0,isA?A1:isC?A1:'rgba('+GR+',0.7)');g.addColorStop(1,isA?A2:isC?A2:'rgba('+GR+',0.4)')}
-ctx.beginPath();ctx.arc(n.x,n.y,pr,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
-if(!isDm){ctx.strokeStyle=isA?'rgba(255,255,255,0.6)':'rgba('+GR+',0.4)';ctx.lineWidth=isA?2:1;ctx.stroke()}
+  // Integration
+  { id:'I.00', cluster:'I', label:'Water Is Necessary\nNot Sufficient', desc:'Water is essential for life but is not itself transformed into the bulk of plant matter.', x:0, y:0 },
+  { id:'I.01', cluster:'I', label:'Carrier vs\nSubstance',        desc:'Distinguishing water as a carrier of minerals from water as the plant\'s body material.', x:0, y:0 },
+];
 
-var la=isDm?0.2:isA?1:isC?0.9:0.7;
-ctx.fillStyle='rgba(240,244,248,'+la+')';ctx.font=(isA?'bold ':'')+(isA?'13px':'11px')+' "Didact Gothic",sans-serif';
-ctx.textAlign='center';ctx.textBaseline='top';
-var lbl=n.name,mw=isA?150:110,ws=lbl.split(' '),ls=[],cl=ws[0];
-for(var i=1;i<ws.length;i++){var tl=cl+' '+ws[i];if(ctx.measureText(tl).width>mw){ls.push(cl);cl=ws[i]}else cl=tl}ls.push(cl);
-var lh=isA?15:13,ly=n.y+pr+6;ls.forEach(function(l,li){ctx.fillText(l,n.x,ly+li*lh)})});
-requestAnimationFrame(draw)}
+// Edges: {s, t, weight, type, crossCluster}
+const EDGES = [
+  // W within
+  { s:'W.00', t:'W.01', w:0.88, type:'implies' },
+  { s:'W.00', t:'W.03', w:0.85, type:'supports' },
+  { s:'W.01', t:'W.04', w:0.76, type:'supports' },
+  { s:'W.02', t:'W.00', w:0.80, type:'supports' },
+  { s:'W.03', t:'W.04', w:0.72, type:'implies' },
+  // M within
+  { s:'M.00', t:'M.01', w:0.84, type:'supports' },
+  { s:'M.02', t:'M.00', w:0.88, type:'supports' },
+  { s:'M.03', t:'M.02', w:0.82, type:'supports' },
+  { s:'M.04', t:'M.00', w:0.76, type:'implies' },
+  { s:'M.01', t:'M.04', w:0.70, type:'hides' },
+  // S within
+  { s:'S.00', t:'S.01', w:0.90, type:'implies' },
+  { s:'S.02', t:'S.00', w:0.86, type:'supports' },
+  { s:'S.01', t:'S.03', w:0.84, type:'implies' },
+  { s:'S.03', t:'M.04', w:0.78, type:'bridges_to' },
+  // Cross-cluster
+  { s:'W.03', t:'M.00', w:0.92, type:'bridges_to', cross:true },
+  { s:'M.02', t:'S.01', w:0.86, type:'bridges_to', cross:true },
+  { s:'W.01', t:'S.00', w:0.80, type:'bridges_to', cross:true },
+  { s:'S.01', t:'I.00', w:0.88, type:'corrective_bridge', cross:true },
+  { s:'M.04', t:'I.01', w:0.84, type:'corrective_bridge', cross:true },
+  { s:'I.00', t:'W.00', w:0.60, type:'bridges_to', cross:true, dashed:true },
+];
 
-function getNodeAt(mx,my){for(var i=nodes.length-1;i>=0;i--){var n=nodes[i],dx=mx-n.x,dy=my-n.y;if(dx*dx+dy*dy<=576)return n}return null}
+// ── Canvas setup ──────────────────────────────────────────
+const canvas = document.getElementById('network-canvas');
+const ctx = canvas.getContext('2d');
 
-function showTooltip(node,cx,cy){tooltipTitle.textContent=node.name;tooltipDesc.textContent=node.desc;
-var ci=getConnectedNodeIds(node.id),cn=[...ci].map(function(id){return nodes[id].name});
-tooltipConns.innerHTML=cn.length?'Connected to: '+cn.map(function(n){return '<span>'+n+'</span>'}).join(', '):'';
-var cr=container.getBoundingClientRect(),tx=cx-cr.left+16,ty=cy-cr.top-10;
-if(tx+320>cr.width)tx=cx-cr.left-336;if(ty+200>cr.height)ty=cr.height-210;if(ty<10)ty=10;
-tooltip.style.left=tx+'px';tooltip.style.top=ty+'px';tooltip.classList.add('visible')}
-function hideTooltip(){tooltip.classList.remove('visible')}
+let W, H, nodes, edges, tooltip, hoveredNode = null, animFrame;
 
-canvas.addEventListener('mousemove',function(e){var r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;mouseY=e.clientY-r.top;
-var nd=getNodeAt(mouseX,mouseY);if(nd){canvas.style.cursor='pointer';hoveredNode=nd;showTooltip(nd,e.clientX,e.clientY)}
-else{canvas.style.cursor='default';hoveredNode=null;hideTooltip()}});
-canvas.addEventListener('mouseleave',function(){hoveredNode=null;hideTooltip();canvas.style.cursor='default'});
-canvas.addEventListener('touchstart',function(e){e.preventDefault();var t=e.touches[0],r=canvas.getBoundingClientRect();
-mouseX=t.clientX-r.left;mouseY=t.clientY-r.top;var nd=getNodeAt(mouseX,mouseY);
-if(nd){hoveredNode=nd;showTooltip(nd,t.clientX,t.clientY)}else{hoveredNode=null;hideTooltip()}},{passive:false});
+function resize() {
+  W = canvas.width  = canvas.offsetWidth;
+  H = canvas.height = canvas.offsetHeight;
+  layoutNodes();
+  draw();
+}
 
-function init(){resize();window.addEventListener('resize',resize);requestAnimationFrame(draw)}
-init()})();
+// ── Cluster layout: position nodes in regions ──────────
+function layoutNodes() {
+  // Define cluster centres as fraction of canvas
+  const centres = {
+    W:  { cx: 0.28, cy: 0.38 },
+    M:  { cx: 0.65, cy: 0.35 },
+    S:  { cx: 0.50, cy: 0.70 },
+    I:  { cx: 0.50, cy: 0.52 },
+  };
+
+  // Group nodes by cluster
+  const byCluster = {};
+  NODES.forEach(n => { (byCluster[n.cluster] = byCluster[n.cluster]||[]).push(n); });
+
+  Object.entries(byCluster).forEach(([cl, list]) => {
+    const c = centres[cl];
+    const cx = c.cx * W, cy = c.cy * H;
+    const count = list.length;
+    // Spread in a circle, radius scales with count
+    const r = Math.min(W, H) * (cl === 'I' ? 0.07 : 0.12 + count * 0.008);
+    list.forEach((n, i) => {
+      const angle = (2 * Math.PI * i / count) - Math.PI / 2;
+      n.x = cx + r * Math.cos(angle);
+      n.y = cy + r * Math.sin(angle);
+      n.r = getRadius(n);
+      n.vx = 0; n.vy = 0;
+    });
+  });
+}
+
+function getRadius(n) {
+  // Integration nodes slightly larger
+  if (n.cluster === 'I') return 22;
+  // Entry/key nodes
+  const key = ['W.00','W.03','M.00','S.01','I.00'];
+  return key.includes(n.id) ? 20 : 15;
+}
+
+// ── Force simulation (short warm-up) ─────────────────────
+function runForces(iterations) {
+  const nodeMap = {};
+  NODES.forEach(n => nodeMap[n.id] = n);
+  const builtEdges = EDGES.map(e => ({ s: nodeMap[e.s], t: nodeMap[e.t], ...e }))
+                          .filter(e => e.s && e.t);
+
+  for (let iter = 0; iter < iterations; iter++) {
+    // Repulsion between all nodes
+    for (let i = 0; i < NODES.length; i++) {
+      for (let j = i+1; j < NODES.length; j++) {
+        const a = NODES[i], b = NODES[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const force = 3000 / (dist * dist);
+        const fx = (dx/dist)*force, fy = (dy/dist)*force;
+        a.vx -= fx; a.vy -= fy;
+        b.vx += fx; b.vy += fy;
+      }
+    }
+    // Same-cluster attraction (spring)
+    builtEdges.forEach(e => {
+      if (e.cross) return; // skip cross-cluster for spring
+      const dx = e.t.x - e.s.x, dy = e.t.y - e.s.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const target = 90;
+      const force = (dist - target) * 0.04;
+      const fx = (dx/dist)*force, fy = (dy/dist)*force;
+      e.s.vx += fx; e.s.vy += fy;
+      e.t.vx -= fx; e.t.vy -= fy;
+    });
+    // Cluster-centre gravity
+    const centres = { W:{cx:0.28,cy:0.38}, M:{cx:0.65,cy:0.35}, S:{cx:0.50,cy:0.70}, I:{cx:0.50,cy:0.52} };
+    NODES.forEach(n => {
+      const c = centres[n.cluster];
+      n.vx += (c.cx * W - n.x) * 0.015;
+      n.vy += (c.cy * H - n.y) * 0.015;
+      n.x += n.vx; n.y += n.vy;
+      n.vx *= 0.6; n.vy *= 0.6;
+      // Clamp to canvas
+      n.x = Math.max(n.r+10, Math.min(W - n.r - 10, n.x));
+      n.y = Math.max(n.r+10, Math.min(H - n.r - 10, n.y));
+    });
+  }
+}
+
+// ── Drawing ───────────────────────────────────────────────
+function edgeColor(e) {
+  if (e.cross) return '#e8ffff';
+  return CLUSTER_COLORS[NODES.find(n=>n.id===e.s)?.cluster]?.stroke || '#e8ffff';
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#0A1428');
+  bg.addColorStop(1, '#0f1e3d');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const nodeMap = {};
+  NODES.forEach(n => nodeMap[n.id] = n);
+  const builtEdges = EDGES.map(e => ({ ...e, sn: nodeMap[e.s], tn: nodeMap[e.t] }))
+                          .filter(e => e.sn && e.tn);
+
+  // Draw cluster halos
+  const clusterGroups = {};
+  NODES.forEach(n => { (clusterGroups[n.cluster] = clusterGroups[n.cluster]||[]).push(n); });
+  Object.entries(clusterGroups).forEach(([cl, list]) => {
+    const col = CLUSTER_COLORS[cl];
+    const cx = list.reduce((s,n)=>s+n.x,0)/list.length;
+    const cy = list.reduce((s,n)=>s+n.y,0)/list.length;
+    const maxR = Math.max(...list.map(n => Math.sqrt((n.x-cx)**2+(n.y-cy)**2))) + 40;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+    grad.addColorStop(0, col.fill + '18');
+    grad.addColorStop(1, col.fill + '00');
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  });
+
+  // Draw edges
+  builtEdges.forEach(e => {
+    const { sn, tn, w, cross, dashed } = e;
+    const col = edgeColor(e);
+    const isHovered = hoveredNode && (sn.id === hoveredNode.id || tn.id === hoveredNode.id);
+    const isConnected = isHovered;
+    const alpha = hoveredNode ? (isConnected ? 1.0 : 0.15) : 0.65;
+    const lineW = cross ? Math.max(2, w * 6) : Math.max(1.5, w * 4);
+
+    // Arrow direction: offset from centre toward edge of circle
+    const dx = tn.x - sn.x, dy = tn.y - sn.y;
+    const dist = Math.sqrt(dx*dx+dy*dy)||1;
+    const sx = sn.x + (dx/dist)*sn.r;
+    const sy = sn.y + (dy/dist)*sn.r;
+    const tx = tn.x - (dx/dist)*(tn.r+8);
+    const ty = tn.y - (dy/dist)*(tn.r+8);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = lineW;
+    if (dashed) ctx.setLineDash([8, 8]);
+    else ctx.setLineDash([]);
+
+    // Slight curve for cross-cluster edges
+    ctx.beginPath();
+    if (cross) {
+      const mx = (sx+tx)/2 + (dy/dist)*30;
+      const my = (sy+ty)/2 - (dx/dist)*30;
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(mx, my, tx, ty);
+    } else {
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrowhead
+    const angle = Math.atan2(ty-sy, tx-sx);
+    const aLen = 10 + lineW;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - aLen*Math.cos(angle-0.35), ty - aLen*Math.sin(angle-0.35));
+    ctx.lineTo(tx - aLen*Math.cos(angle+0.35), ty - aLen*Math.sin(angle+0.35));
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Weight label on cross-cluster edges
+    if (cross && w >= 0.70) {
+      let lx, ly;
+      if (cross) {
+        const mx = (sx+tx)/2 + (dy/dist)*30;
+        const my = (sy+ty)/2 - (dx/dist)*30;
+        lx = mx; ly = my;
+      } else {
+        lx = (sx+tx)/2; ly = (sy+ty)/2;
+      }
+      ctx.font = 'bold 11px "Didact Gothic", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = '#0A1428';
+      ctx.lineWidth = 4;
+      ctx.strokeText(w.toFixed(2), lx, ly);
+      ctx.fillStyle = '#c9eef7';
+      ctx.fillText(w.toFixed(2), lx, ly);
+    }
+
+    ctx.restore();
+  });
+
+  // Draw nodes
+  NODES.forEach(n => {
+    const col = CLUSTER_COLORS[n.cluster];
+    const isHovered = hoveredNode && n.id === hoveredNode.id;
+    const isConnected = hoveredNode && builtEdges.some(e =>
+      (e.sn.id === hoveredNode.id && e.tn.id === n.id) ||
+      (e.tn.id === hoveredNode.id && e.sn.id === n.id)
+    );
+    const dimmed = hoveredNode && !isHovered && !isConnected;
+    const alpha = dimmed ? 0.25 : 1.0;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Glow
+    if (isHovered || isConnected) {
+      const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r*3);
+      glow.addColorStop(0, col.fill + '55');
+      glow.addColorStop(1, col.fill + '00');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r*3, 0, Math.PI*2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+    }
+
+    // Node circle
+    const nodeGrad = ctx.createRadialGradient(n.x - n.r*0.3, n.y - n.r*0.3, 0, n.x, n.y, n.r);
+    nodeGrad.addColorStop(0, col.stroke);
+    nodeGrad.addColorStop(1, col.fill);
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+    ctx.fillStyle = nodeGrad;
+    ctx.fill();
+    ctx.strokeStyle = isHovered ? '#ffffff' : col.stroke;
+    ctx.lineWidth = isHovered ? 2.5 : 1.4;
+    ctx.stroke();
+
+    // Label
+    const lines = n.label.split('\n');
+    ctx.font = `${n.r > 18 ? 11 : 10}px "Didact Gothic", Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e8fbff';
+    const labelY = n.y + n.r + 14;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, n.x, labelY + i*13 - (lines.length-1)*6.5);
+    });
+
+    ctx.restore();
+  });
+
+  // Cluster title labels
+  const centres = { W:{cx:0.28,cy:0.38}, M:{cx:0.65,cy:0.35}, S:{cx:0.50,cy:0.70}, I:{cx:0.50,cy:0.52} };
+  Object.entries(CLUSTER_COLORS).forEach(([cl, col]) => {
+    const c = centres[cl];
+    if (!c) return;
+    ctx.save();
+    ctx.globalAlpha = hoveredNode ? 0.4 : 0.85;
+    ctx.font = 'bold 13px "Didact Gothic", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = col.stroke;
+    ctx.fillText(col.label, c.cx * W, c.cy * H - 110);
+    ctx.restore();
+  });
+}
+
+// ── Tooltip / Hover ───────────────────────────────────────
+function getHovered(mx, my) {
+  for (let i = NODES.length-1; i >= 0; i--) {
+    const n = NODES[i];
+    if ((mx-n.x)**2 + (my-n.y)**2 <= (n.r+6)**2) return n;
+  }
+  return null;
+}
+
+function showTooltip(n, px, py) {
+  const tip = document.getElementById('tooltip');
+  if (!tip) return;
+  tip.querySelector('.tip-title').textContent = n.label.replace('\n',' ');
+  tip.querySelector('.tip-cluster').textContent = CLUSTER_COLORS[n.cluster].label;
+  tip.querySelector('.tip-desc').textContent = n.desc;
+  tip.style.display = 'block';
+  const rect = canvas.getBoundingClientRect();
+  let left = px + 16, top = py - 10;
+  if (left + 260 > rect.right) left = px - 270;
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+}
+
+function hideTooltip() {
+  const tip = document.getElementById('tooltip');
+  if (tip) tip.style.display = 'none';
+}
+
+function onMove(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+  const my = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+  const found = getHovered(mx, my);
+  if (found !== hoveredNode) {
+    hoveredNode = found;
+    if (found) { showTooltip(found, e.clientX||e.touches?.[0]?.clientX, e.clientY||e.touches?.[0]?.clientY); canvas.style.cursor='pointer'; }
+    else        { hideTooltip(); canvas.style.cursor='default'; }
+    draw();
+  } else if (found) {
+    showTooltip(found, e.clientX||e.touches?.[0]?.clientX, e.clientY||e.touches?.[0]?.clientY);
+  }
+}
+
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('touchmove', e => { e.preventDefault(); onMove(e); }, { passive:false });
+canvas.addEventListener('mouseleave', () => { hoveredNode=null; hideTooltip(); draw(); });
+
+// ── Legend ────────────────────────────────────────────────
+function drawLegend() {
+  const leg = document.getElementById('network-legend');
+  if (!leg) return;
+  leg.innerHTML = Object.entries(CLUSTER_COLORS).map(([cl,col]) =>
+    `<span class="leg-item"><span class="leg-dot" style="background:${col.fill};box-shadow:0 0 6px ${col.stroke}88;border:1.5px solid ${col.stroke}"></span>${col.label}</span>`
+  ).join('') +
+  `<span class="leg-item"><span class="leg-line" style="background:#e8ffff"></span>Cross-cluster link (weight shown)</span>`;
+}
+
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  resize();
+  runForces(300);
+  draw();
+  drawLegend();
+});
+window.addEventListener('resize', () => { resize(); runForces(150); draw(); });

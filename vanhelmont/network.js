@@ -1,81 +1,404 @@
-(function(){'use strict';
-var nodes=[{"id": 0, "name": "Willow Tree Experiment", "desc": "The five-year controlled experiment in which van Helmont grew a willow shoot in measured soil, adding only water, then re-weighed both plant and soil."}, {"id": 1, "name": "Water as Sole Source", "desc": "Van Helmont's central conclusion: all 164 lbs of new plant matter originated entirely from water, with no other material contributing."}, {"id": 2, "name": "Controlled Experimental Design", "desc": "Methodological innovations \u2014 oven-dried soil, rain/distilled water only, tin cover to block dust \u2014 that gave the experiment credibility."}, {"id": 3, "name": "Soil Mass Unchanged", "desc": "The observed result that the soil lost only ~2 oz across five years, leading van Helmont to eliminate soil as the source of plant mass."}, {"id": 4, "name": "Dismissed 2-Ounce Discrepancy", "desc": "Van Helmont treated the small soil loss as experimental error rather than as evidence of real mineral uptake \u2014 the critical missed clue."}, {"id": 5, "name": "Ignorance of Atmospheric Gases", "desc": "In the 17th century, air was treated as a single element, not a mixture of distinct chemical species. The category of atmospheric input did not exist."}, {"id": 6, "name": "No Role for Air", "desc": "Because van Helmont lacked any concept of gases as distinct substances, he did not consider the atmosphere as a potential source of plant material."}, {"id": 7, "name": "No Role for Sunlight", "desc": "Light was not understood as an energy source capable of driving chemical reactions."}, {"id": 8, "name": "Quantitative Reasoning", "desc": "Van Helmont's use of precise weights before and after represents an early application of conservation-of-mass logic to biology."}, {"id": 9, "name": "Transmutation of Water", "desc": "Rooted in alchemical thinking, van Helmont believed the plant's archeus converted water directly into wood, bark, and root."}, {"id": 10, "name": "Plant as Passive Converter", "desc": "The plant is primarily a vessel that receives water and transforms it, with no active role attributed to light, air, or soil chemistry."}, {"id": 11, "name": "First Recorded Experiment", "desc": "The historical significance as the first attempt to answer a question about plant nutrition through controlled, quantitative observation."}, {"id": 12, "name": "Echo of Thales", "desc": "Van Helmont's conclusion revived \u2014 through empirical means \u2014 Thales' ancient claim that water is the fundamental substance of all matter."}, {"id": 13, "name": "Overlooked Carbon Dioxide", "desc": "The key source of plant carbon (atmospheric CO\u2082) was entirely absent from van Helmont's conceptual framework."}];
-var edges=[[0, 1], [0, 2], [0, 3], [0, 4], [0, 11], [1, 6], [1, 7], [1, 9], [1, 10], [1, 12], [2, 3], [2, 4], [2, 8], [2, 11], [3, 4], [3, 8], [4, 5], [4, 13], [5, 6], [5, 7], [5, 13], [6, 7], [6, 13], [7, 10], [8, 3], [8, 11], [9, 1], [9, 10], [9, 12], [10, 7], [10, 12], [11, 0], [11, 8], [12, 1], [12, 9]];
-var A1='#22C55E',A2='#4ADE80',GR='34, 197, 94',A2R='74, 222, 128';
-var canvas=document.getElementById('network-canvas'),ctx=canvas.getContext('2d'),
-container=document.getElementById('canvas-container'),
-tooltip=document.getElementById('tooltip'),
-tooltipTitle=document.getElementById('tooltip-title'),
-tooltipDesc=document.getElementById('tooltip-desc'),
-tooltipConns=document.getElementById('tooltip-connections');
-var W,H,dpr,hoveredNode=null,mouseX=0,mouseY=0,animTime=0;
+/* =========================================================
+   Van Helmont Weighted Misconception Network
+   4 clusters: W Willow Experiment, R Rain Water, M Mass Accounting, Integration
+   Style: SVG reference — dark navy bg, coloured cluster nodes,
+          thick weighted arrows, edge-weight labels on cross-cluster links
+   ========================================================= */
 
-function resize(){var r=container.getBoundingClientRect();dpr=window.devicePixelRatio||1;W=r.width;H=r.height;
-canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
-ctx.setTransform(dpr,0,0,dpr,0,0);layoutNodes()}
+const CLUSTER_COLORS = {
+  W:  { fill: '#15803d', stroke: '#4ADE80', label: 'W Willow Experiment' },
+  R:  { fill: '#166534', stroke: '#86efac', label: 'R Rain Water Theory' },
+  M:  { fill: '#14532d', stroke: '#6ee7b7', label: 'M Mass Accounting' },
+  I:  { fill: '#065f46', stroke: '#34d399', label: 'Integration' },
+};
 
-function layoutNodes(){var cx=W/2,cy=H/2,rx=Math.min(W,900)*0.38,ry=Math.min(H,700)*0.38;
-nodes.forEach(function(n,i){var a=(i/nodes.length)*Math.PI*2-Math.PI/2,rv=0.85+Math.sin(i*2.7)*0.15;
-n.x=cx+Math.cos(a)*rx*rv;n.y=cy+Math.sin(a)*ry*rv;n.vx=0;n.vy=0});
-for(var iter=0;iter<300;iter++){var alpha=1-iter/300;
-for(var i=0;i<nodes.length;i++)for(var j=i+1;j<nodes.length;j++){
-var dx=nodes[j].x-nodes[i].x,dy=nodes[j].y-nodes[i].y,d=Math.sqrt(dx*dx+dy*dy)||1,
-rs=W<500?18000:12000,f=rs/(d*d),fx=dx/d*f,fy=dy/d*f;
-nodes[i].vx-=fx;nodes[i].vy-=fy;nodes[j].vx+=fx;nodes[j].vy+=fy}
-edges.forEach(function(e){var dx=nodes[e[1]].x-nodes[e[0]].x,dy=nodes[e[1]].y-nodes[e[0]].y,
-d=Math.sqrt(dx*dx+dy*dy)||1,id=Math.min(W,H)*0.18,f=(d-id)*0.005,fx=dx/d*f,fy=dy/d*f;
-nodes[e[0]].vx+=fx;nodes[e[0]].vy+=fy;nodes[e[1]].vx-=fx;nodes[e[1]].vy-=fy});
-nodes.forEach(function(n){n.vx+=(cx-n.x)*0.002;n.vy+=(cy-n.y)*0.002;
-n.vx*=0.85;n.vy*=0.85;n.x+=n.vx*alpha;n.y+=n.vy*alpha;
-var p=60;n.x=Math.max(p,Math.min(W-p,n.x));n.y=Math.max(p,Math.min(H-p,n.y))})}}
+const NODES = [
+  // W cluster
+  { id:'W.00', cluster:'W', label:'Willow Gained\n164 Pounds',     desc:'Van Helmont\'s willow grew 164 lbs over 5 years while soil lost only 2 oz — water must be the source.', x:0, y:0 },
+  { id:'W.01', cluster:'W', label:'Tin Cover\nPrevents Soil Loss', desc:'A tin cover prevented dust addition; controlled conditions seemed to isolate water as the only input.', x:0, y:0 },
+  { id:'W.02', cluster:'W', label:'Soil Mass\nUnchanged',           desc:'Only 2 ounces of soil were lost; this ruled out soil as the primary source of plant mass.', x:0, y:0 },
+  { id:'W.03', cluster:'W', label:'Only Input\nWas Rain Water',    desc:'The only measurable addition to the pot was rain water — so rain water must be the material cause.', x:0, y:0 },
+  { id:'W.04', cluster:'W', label:'Water Transforms\nInto Wood',   desc:'Van Helmont concluded water is transformed chemically into the substance of the willow tree.', x:0, y:0 },
 
-function getConnectedNodeIds(nid){var s=new Set();edges.forEach(function(e){if(e[0]===nid)s.add(e[1]);if(e[1]===nid)s.add(e[0])});return s}
+  // R cluster
+  { id:'R.00', cluster:'R', label:'Rain Water as\nPure Source',   desc:'Rain water falling from the sky was considered pure and free of earthy contamination.', x:0, y:0 },
+  { id:'R.01', cluster:'R', label:'No Minerals\nin Rain',          desc:'Rain water appears clear and pure — it does not carry the earthy minerals that soil does.', x:0, y:0 },
+  { id:'R.02', cluster:'R', label:'Pure Water\nCan Build Life',    desc:'If rain water is pure and yet builds plant mass, water itself must be the building material.', x:0, y:0 },
+  { id:'R.03', cluster:'R', label:'Dissolved CO₂\nUnaccounted',   desc:'Rain water actually carries dissolved CO₂ from the atmosphere — this was unknown to Van Helmont.', x:0, y:0 },
 
-function draw(){animTime+=0.015;ctx.clearRect(0,0,W,H);
-var cIds=hoveredNode!==null?getConnectedNodeIds(hoveredNode.id):new Set(),isH=hoveredNode!==null;
-edges.forEach(function(e){var na=nodes[e[0]],nb=nodes[e[1]],hl=isH&&(e[0]===hoveredNode.id||e[1]===hoveredNode.id),dm=isH&&!hl;
-ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.lineTo(nb.x,nb.y);
-if(hl){ctx.strokeStyle='rgba('+GR+',0.8)';ctx.lineWidth=2.5;ctx.shadowColor='rgba('+GR+',0.5)';ctx.shadowBlur=12}
-else if(dm){ctx.strokeStyle='rgba('+GR+',0.06)';ctx.lineWidth=1;ctx.shadowColor='transparent';ctx.shadowBlur=0}
-else{ctx.strokeStyle='rgba('+GR+',0.18)';ctx.lineWidth=1;ctx.shadowColor='transparent';ctx.shadowBlur=0}
-ctx.stroke();ctx.shadowBlur=0});
+  // M cluster
+  { id:'M.00', cluster:'M', label:'Two Ounces\nSoil Loss',         desc:'The 2-ounce soil loss was treated as negligible and insufficient to explain 164 lbs of plant growth.', x:0, y:0 },
+  { id:'M.01', cluster:'M', label:'Air Input\nNot Weighed',        desc:'Van Helmont\'s balance weighed soil and water but never attempted to weigh the air around the plant.', x:0, y:0 },
+  { id:'M.02', cluster:'M', label:'Fresh vs\nDry Mass Confusion',  desc:'The 164-lb figure included water content; the dry mass of the wood was not separately analysed.', x:0, y:0 },
+  { id:'M.03', cluster:'M', label:'Carbon Source\nUnrecognised',   desc:'Carbon dioxide in air was unknown — so the main carbon source for plant matter was never considered.', x:0, y:0 },
 
-nodes.forEach(function(n){var isA=isH&&hoveredNode.id===n.id,isC=isH&&cIds.has(n.id),isDm=isH&&!isA&&!isC;
-var br=isA?18:isC?13:10,pr=isA?br+Math.sin(animTime*3)*2:br;
-if(isA||isC){var gg=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,pr*3);
-gg.addColorStop(0,isA?'rgba('+GR+',0.35)':'rgba('+A2R+',0.2)');gg.addColorStop(1,'rgba('+GR+',0)');
-ctx.beginPath();ctx.arc(n.x,n.y,pr*3,0,Math.PI*2);ctx.fillStyle=gg;ctx.fill()}
-var g=ctx.createRadialGradient(n.x-pr*0.3,n.y-pr*0.3,0,n.x,n.y,pr);
-if(isDm){g.addColorStop(0,'rgba(60,60,80,0.5)');g.addColorStop(1,'rgba(30,30,50,0.3)')}
-else{g.addColorStop(0,isA?A1:isC?A1:'rgba('+GR+',0.7)');g.addColorStop(1,isA?A2:isC?A2:'rgba('+GR+',0.4)')}
-ctx.beginPath();ctx.arc(n.x,n.y,pr,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
-if(!isDm){ctx.strokeStyle=isA?'rgba(255,255,255,0.6)':'rgba('+GR+',0.4)';ctx.lineWidth=isA?2:1;ctx.stroke()}
+  // Integration
+  { id:'I.00', cluster:'I', label:'Air Must\nBe Weighed',          desc:'A complete mass balance requires counting all atmospheric inputs, not just visible soil and water.', x:0, y:0 },
+  { id:'I.01', cluster:'I', label:'Water Is\nReactant Not Source', desc:'Water participates in photosynthesis as a reactant but most plant dry mass comes from atmospheric CO₂.', x:0, y:0 },
+];
 
-var la=isDm?0.2:isA?1:isC?0.9:0.7;
-ctx.fillStyle='rgba(240,244,248,'+la+')';ctx.font=(isA?'bold ':'')+(isA?'13px':'11px')+' "Didact Gothic",sans-serif';
-ctx.textAlign='center';ctx.textBaseline='top';
-var lbl=n.name,mw=isA?150:110,ws=lbl.split(' '),ls=[],cl=ws[0];
-for(var i=1;i<ws.length;i++){var tl=cl+' '+ws[i];if(ctx.measureText(tl).width>mw){ls.push(cl);cl=ws[i]}else cl=tl}ls.push(cl);
-var lh=isA?15:13,ly=n.y+pr+6;ls.forEach(function(l,li){ctx.fillText(l,n.x,ly+li*lh)})});
-requestAnimationFrame(draw)}
+// Edges: {s, t, weight, type, crossCluster}
+const EDGES = [
+  // W within
+  { s:'W.00', t:'W.02', w:0.92, type:'supports' },
+  { s:'W.00', t:'W.03', w:0.94, type:'supports' },
+  { s:'W.01', t:'W.02', w:0.84, type:'supports' },
+  { s:'W.03', t:'W.04', w:0.88, type:'implies' },
+  { s:'W.02', t:'W.04', w:0.80, type:'supports' },
+  // R within
+  { s:'R.00', t:'R.01', w:0.82, type:'supports' },
+  { s:'R.01', t:'R.02', w:0.86, type:'implies' },
+  { s:'R.02', t:'W.04', w:0.78, type:'supports' },
+  { s:'R.03', t:'R.01', w:0.70, type:'challenges' },
+  // M within
+  { s:'M.00', t:'W.02', w:0.88, type:'supports' },
+  { s:'M.01', t:'M.03', w:0.84, type:'hides' },
+  { s:'M.02', t:'M.03', w:0.80, type:'hides' },
+  { s:'M.03', t:'I.00', w:0.90, type:'corrective_bridge' },
+  // Cross-cluster
+  { s:'W.03', t:'R.00', w:0.88, type:'bridges_to', cross:true },
+  { s:'W.04', t:'M.02', w:0.84, type:'bridges_to', cross:true },
+  { s:'M.01', t:'I.00', w:0.92, type:'corrective_bridge', cross:true },
+  { s:'R.03', t:'M.03', w:0.90, type:'bridges_to', cross:true },
+  { s:'I.00', t:'I.01', w:0.88, type:'corrective_bridge', cross:true },
+  { s:'I.01', t:'W.00', w:0.58, type:'bridges_to', cross:true, dashed:true },
+];
 
-function getNodeAt(mx,my){for(var i=nodes.length-1;i>=0;i--){var n=nodes[i],dx=mx-n.x,dy=my-n.y;if(dx*dx+dy*dy<=576)return n}return null}
+// ── Canvas setup ──────────────────────────────────────────
+const canvas = document.getElementById('network-canvas');
+const ctx = canvas.getContext('2d');
 
-function showTooltip(node,cx,cy){tooltipTitle.textContent=node.name;tooltipDesc.textContent=node.desc;
-var ci=getConnectedNodeIds(node.id),cn=[...ci].map(function(id){return nodes[id].name});
-tooltipConns.innerHTML=cn.length?'Connected to: '+cn.map(function(n){return '<span>'+n+'</span>'}).join(', '):'';
-var cr=container.getBoundingClientRect(),tx=cx-cr.left+16,ty=cy-cr.top-10;
-if(tx+320>cr.width)tx=cx-cr.left-336;if(ty+200>cr.height)ty=cr.height-210;if(ty<10)ty=10;
-tooltip.style.left=tx+'px';tooltip.style.top=ty+'px';tooltip.classList.add('visible')}
-function hideTooltip(){tooltip.classList.remove('visible')}
+let W, H, nodes, edges, tooltip, hoveredNode = null, animFrame;
 
-canvas.addEventListener('mousemove',function(e){var r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;mouseY=e.clientY-r.top;
-var nd=getNodeAt(mouseX,mouseY);if(nd){canvas.style.cursor='pointer';hoveredNode=nd;showTooltip(nd,e.clientX,e.clientY)}
-else{canvas.style.cursor='default';hoveredNode=null;hideTooltip()}});
-canvas.addEventListener('mouseleave',function(){hoveredNode=null;hideTooltip();canvas.style.cursor='default'});
-canvas.addEventListener('touchstart',function(e){e.preventDefault();var t=e.touches[0],r=canvas.getBoundingClientRect();
-mouseX=t.clientX-r.left;mouseY=t.clientY-r.top;var nd=getNodeAt(mouseX,mouseY);
-if(nd){hoveredNode=nd;showTooltip(nd,t.clientX,t.clientY)}else{hoveredNode=null;hideTooltip()}},{passive:false});
+function resize() {
+  W = canvas.width  = canvas.offsetWidth;
+  H = canvas.height = canvas.offsetHeight;
+  layoutNodes();
+  draw();
+}
 
-function init(){resize();window.addEventListener('resize',resize);requestAnimationFrame(draw)}
-init()})();
+// ── Cluster layout: position nodes in regions ──────────
+function layoutNodes() {
+  // Define cluster centres as fraction of canvas
+  const centres = {
+    W:  { cx: 0.25, cy: 0.38 },
+    R:  { cx: 0.65, cy: 0.35 },
+    M:  { cx: 0.48, cy: 0.68 },
+    I:  { cx: 0.48, cy: 0.50 },
+  };
+
+  // Group nodes by cluster
+  const byCluster = {};
+  NODES.forEach(n => { (byCluster[n.cluster] = byCluster[n.cluster]||[]).push(n); });
+
+  Object.entries(byCluster).forEach(([cl, list]) => {
+    const c = centres[cl];
+    const cx = c.cx * W, cy = c.cy * H;
+    const count = list.length;
+    // Spread in a circle, radius scales with count
+    const r = Math.min(W, H) * (cl === 'I' ? 0.07 : 0.12 + count * 0.008);
+    list.forEach((n, i) => {
+      const angle = (2 * Math.PI * i / count) - Math.PI / 2;
+      n.x = cx + r * Math.cos(angle);
+      n.y = cy + r * Math.sin(angle);
+      n.r = getRadius(n);
+      n.vx = 0; n.vy = 0;
+    });
+  });
+}
+
+function getRadius(n) {
+  // Integration nodes slightly larger
+  if (n.cluster === 'I') return 22;
+  // Entry/key nodes
+  const key = ['W.00','W.03','R.00','M.01','I.00'];
+  return key.includes(n.id) ? 20 : 15;
+}
+
+// ── Force simulation (short warm-up) ─────────────────────
+function runForces(iterations) {
+  const nodeMap = {};
+  NODES.forEach(n => nodeMap[n.id] = n);
+  const builtEdges = EDGES.map(e => ({ s: nodeMap[e.s], t: nodeMap[e.t], ...e }))
+                          .filter(e => e.s && e.t);
+
+  for (let iter = 0; iter < iterations; iter++) {
+    // Repulsion between all nodes
+    for (let i = 0; i < NODES.length; i++) {
+      for (let j = i+1; j < NODES.length; j++) {
+        const a = NODES[i], b = NODES[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const force = 3000 / (dist * dist);
+        const fx = (dx/dist)*force, fy = (dy/dist)*force;
+        a.vx -= fx; a.vy -= fy;
+        b.vx += fx; b.vy += fy;
+      }
+    }
+    // Same-cluster attraction (spring)
+    builtEdges.forEach(e => {
+      if (e.cross) return; // skip cross-cluster for spring
+      const dx = e.t.x - e.s.x, dy = e.t.y - e.s.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const target = 90;
+      const force = (dist - target) * 0.04;
+      const fx = (dx/dist)*force, fy = (dy/dist)*force;
+      e.s.vx += fx; e.s.vy += fy;
+      e.t.vx -= fx; e.t.vy -= fy;
+    });
+    // Cluster-centre gravity
+    const centres = { W:{cx:0.25,cy:0.38}, R:{cx:0.65,cy:0.35}, M:{cx:0.48,cy:0.68}, I:{cx:0.48,cy:0.50} };
+    NODES.forEach(n => {
+      const c = centres[n.cluster];
+      n.vx += (c.cx * W - n.x) * 0.015;
+      n.vy += (c.cy * H - n.y) * 0.015;
+      n.x += n.vx; n.y += n.vy;
+      n.vx *= 0.6; n.vy *= 0.6;
+      // Clamp to canvas
+      n.x = Math.max(n.r+10, Math.min(W - n.r - 10, n.x));
+      n.y = Math.max(n.r+10, Math.min(H - n.r - 10, n.y));
+    });
+  }
+}
+
+// ── Drawing ───────────────────────────────────────────────
+function edgeColor(e) {
+  if (e.cross) return '#e8ffff';
+  return CLUSTER_COLORS[NODES.find(n=>n.id===e.s)?.cluster]?.stroke || '#e8ffff';
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#081410');
+  bg.addColorStop(1, '#0d2018');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const nodeMap = {};
+  NODES.forEach(n => nodeMap[n.id] = n);
+  const builtEdges = EDGES.map(e => ({ ...e, sn: nodeMap[e.s], tn: nodeMap[e.t] }))
+                          .filter(e => e.sn && e.tn);
+
+  // Draw cluster halos
+  const clusterGroups = {};
+  NODES.forEach(n => { (clusterGroups[n.cluster] = clusterGroups[n.cluster]||[]).push(n); });
+  Object.entries(clusterGroups).forEach(([cl, list]) => {
+    const col = CLUSTER_COLORS[cl];
+    const cx = list.reduce((s,n)=>s+n.x,0)/list.length;
+    const cy = list.reduce((s,n)=>s+n.y,0)/list.length;
+    const maxR = Math.max(...list.map(n => Math.sqrt((n.x-cx)**2+(n.y-cy)**2))) + 40;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+    grad.addColorStop(0, col.fill + '18');
+    grad.addColorStop(1, col.fill + '00');
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  });
+
+  // Draw edges
+  builtEdges.forEach(e => {
+    const { sn, tn, w, cross, dashed } = e;
+    const col = edgeColor(e);
+    const isHovered = hoveredNode && (sn.id === hoveredNode.id || tn.id === hoveredNode.id);
+    const isConnected = isHovered;
+    const alpha = hoveredNode ? (isConnected ? 1.0 : 0.15) : 0.65;
+    const lineW = cross ? Math.max(2, w * 6) : Math.max(1.5, w * 4);
+
+    // Arrow direction: offset from centre toward edge of circle
+    const dx = tn.x - sn.x, dy = tn.y - sn.y;
+    const dist = Math.sqrt(dx*dx+dy*dy)||1;
+    const sx = sn.x + (dx/dist)*sn.r;
+    const sy = sn.y + (dy/dist)*sn.r;
+    const tx = tn.x - (dx/dist)*(tn.r+8);
+    const ty = tn.y - (dy/dist)*(tn.r+8);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = lineW;
+    if (dashed) ctx.setLineDash([8, 8]);
+    else ctx.setLineDash([]);
+
+    // Slight curve for cross-cluster edges
+    ctx.beginPath();
+    if (cross) {
+      const mx = (sx+tx)/2 + (dy/dist)*30;
+      const my = (sy+ty)/2 - (dx/dist)*30;
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(mx, my, tx, ty);
+    } else {
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrowhead
+    const angle = Math.atan2(ty-sy, tx-sx);
+    const aLen = 10 + lineW;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - aLen*Math.cos(angle-0.35), ty - aLen*Math.sin(angle-0.35));
+    ctx.lineTo(tx - aLen*Math.cos(angle+0.35), ty - aLen*Math.sin(angle+0.35));
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Weight label on cross-cluster edges
+    if (cross && w >= 0.70) {
+      let lx, ly;
+      if (cross) {
+        const mx = (sx+tx)/2 + (dy/dist)*30;
+        const my = (sy+ty)/2 - (dx/dist)*30;
+        lx = mx; ly = my;
+      } else {
+        lx = (sx+tx)/2; ly = (sy+ty)/2;
+      }
+      ctx.font = 'bold 11px "Didact Gothic", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = '#081410';
+      ctx.lineWidth = 4;
+      ctx.strokeText(w.toFixed(2), lx, ly);
+      ctx.fillStyle = '#c9eef7';
+      ctx.fillText(w.toFixed(2), lx, ly);
+    }
+
+    ctx.restore();
+  });
+
+  // Draw nodes
+  NODES.forEach(n => {
+    const col = CLUSTER_COLORS[n.cluster];
+    const isHovered = hoveredNode && n.id === hoveredNode.id;
+    const isConnected = hoveredNode && builtEdges.some(e =>
+      (e.sn.id === hoveredNode.id && e.tn.id === n.id) ||
+      (e.tn.id === hoveredNode.id && e.sn.id === n.id)
+    );
+    const dimmed = hoveredNode && !isHovered && !isConnected;
+    const alpha = dimmed ? 0.25 : 1.0;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Glow
+    if (isHovered || isConnected) {
+      const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r*3);
+      glow.addColorStop(0, col.fill + '55');
+      glow.addColorStop(1, col.fill + '00');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r*3, 0, Math.PI*2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+    }
+
+    // Node circle
+    const nodeGrad = ctx.createRadialGradient(n.x - n.r*0.3, n.y - n.r*0.3, 0, n.x, n.y, n.r);
+    nodeGrad.addColorStop(0, col.stroke);
+    nodeGrad.addColorStop(1, col.fill);
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+    ctx.fillStyle = nodeGrad;
+    ctx.fill();
+    ctx.strokeStyle = isHovered ? '#ffffff' : col.stroke;
+    ctx.lineWidth = isHovered ? 2.5 : 1.4;
+    ctx.stroke();
+
+    // Label
+    const lines = n.label.split('\n');
+    ctx.font = `${n.r > 18 ? 11 : 10}px "Didact Gothic", Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e8fbff';
+    const labelY = n.y + n.r + 14;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, n.x, labelY + i*13 - (lines.length-1)*6.5);
+    });
+
+    ctx.restore();
+  });
+
+  // Cluster title labels
+  const centres = { W:{cx:0.25,cy:0.38}, R:{cx:0.65,cy:0.35}, M:{cx:0.48,cy:0.68}, I:{cx:0.48,cy:0.50} };
+  Object.entries(CLUSTER_COLORS).forEach(([cl, col]) => {
+    const c = centres[cl];
+    if (!c) return;
+    ctx.save();
+    ctx.globalAlpha = hoveredNode ? 0.4 : 0.85;
+    ctx.font = 'bold 13px "Didact Gothic", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = col.stroke;
+    ctx.fillText(col.label, c.cx * W, c.cy * H - 110);
+    ctx.restore();
+  });
+}
+
+// ── Tooltip / Hover ───────────────────────────────────────
+function getHovered(mx, my) {
+  for (let i = NODES.length-1; i >= 0; i--) {
+    const n = NODES[i];
+    if ((mx-n.x)**2 + (my-n.y)**2 <= (n.r+6)**2) return n;
+  }
+  return null;
+}
+
+function showTooltip(n, px, py) {
+  const tip = document.getElementById('tooltip');
+  if (!tip) return;
+  tip.querySelector('.tip-title').textContent = n.label.replace('\n',' ');
+  tip.querySelector('.tip-cluster').textContent = CLUSTER_COLORS[n.cluster].label;
+  tip.querySelector('.tip-desc').textContent = n.desc;
+  tip.style.display = 'block';
+  const rect = canvas.getBoundingClientRect();
+  let left = px + 16, top = py - 10;
+  if (left + 260 > rect.right) left = px - 270;
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+}
+
+function hideTooltip() {
+  const tip = document.getElementById('tooltip');
+  if (tip) tip.style.display = 'none';
+}
+
+function onMove(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+  const my = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+  const found = getHovered(mx, my);
+  if (found !== hoveredNode) {
+    hoveredNode = found;
+    if (found) { showTooltip(found, e.clientX||e.touches?.[0]?.clientX, e.clientY||e.touches?.[0]?.clientY); canvas.style.cursor='pointer'; }
+    else        { hideTooltip(); canvas.style.cursor='default'; }
+    draw();
+  } else if (found) {
+    showTooltip(found, e.clientX||e.touches?.[0]?.clientX, e.clientY||e.touches?.[0]?.clientY);
+  }
+}
+
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('touchmove', e => { e.preventDefault(); onMove(e); }, { passive:false });
+canvas.addEventListener('mouseleave', () => { hoveredNode=null; hideTooltip(); draw(); });
+
+// ── Legend ────────────────────────────────────────────────
+function drawLegend() {
+  const leg = document.getElementById('network-legend');
+  if (!leg) return;
+  leg.innerHTML = Object.entries(CLUSTER_COLORS).map(([cl,col]) =>
+    `<span class="leg-item"><span class="leg-dot" style="background:${col.fill};box-shadow:0 0 6px ${col.stroke}88;border:1.5px solid ${col.stroke}"></span>${col.label}</span>`
+  ).join('') +
+  `<span class="leg-item"><span class="leg-line" style="background:#e8ffff"></span>Cross-cluster link (weight shown)</span>`;
+}
+
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  resize();
+  runForces(300);
+  draw();
+  drawLegend();
+});
+window.addEventListener('resize', () => { resize(); runForces(150); draw(); });
