@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aristotle — Probabilistic Misconception Network (v2)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Didact+Gothic&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Didact Gothic', Arial, sans-serif; background: #fff; color: #123047; }
+
+    /* ── Page layout ── */
+    .page-header {
+      padding: 28px 40px 20px;
+      border-bottom: 1.5px solid #b8d4e8;
+      background: #fff;
+    }
+    .page-header h1 {
+      font-size: clamp(18px, 2.5vw, 32px);
+      font-weight: 700;
+      color: #123047;
+      line-height: 1.2;
+    }
+    .page-header p {
+      font-size: clamp(12px, 1.4vw, 16px);
+      color: #4b6b7c;
+      margin-top: 6px;
+      max-width: 900px;
+      line-height: 1.5;
+    }
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1.5px solid;
+    }
+    .badge.nodes { color: #123047; border-color: #b8d4e8; background: #f0f7ff; }
+    .badge.edges { color: #123047; border-color: #b8d4e8; background: #f0f7ff; }
+    .badge.prob  { color: #6b4f00; border-color: #f5c842; background: #fffae8; }
+
+    /* ── Controls bar ── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      align-items: center;
+      padding: 12px 40px;
+      background: #f7fbff;
+      border-bottom: 1px solid #dce9f2;
+      font-size: 14px;
+    }
+    .ctrl-group { display: flex; align-items: center; gap: 8px; }
+    .ctrl-group label { color: #4b6b7c; font-weight: 600; }
+    .ctrl-group input[type=range] { width: 110px; accent-color: #2db6ff; }
+    .ctrl-group select {
+      padding: 4px 10px;
+      border: 1px solid #b8d4e8;
+      border-radius: 6px;
+      background: #fff;
+      color: #123047;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .ctrl-group button {
+      padding: 5px 14px;
+      border: 1.5px solid #b8d4e8;
+      border-radius: 8px;
+      background: #fff;
+      color: #123047;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: background .15s;
+    }
+    .ctrl-group button:hover { background: #e8f3fb; }
+    .ctrl-group button.active { background: #ddeeff; border-color: #2db6ff; }
+    .val-display { min-width: 32px; text-align: right; color: #123047; font-weight: 600; }
+
+    /* ── Canvas area ── */
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      background: #fff;
+      overflow: hidden;
+    }
+    #net-canvas {
+      display: block;
+      width: 100%;
+      height: calc(100vh - 220px);
+      min-height: 500px;
+      cursor: default;
+    }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: fixed;
+      display: none;
+      pointer-events: none;
+      background: #fff;
+      border: 1.5px solid #b8d4e8;
+      border-radius: 12px;
+      padding: 14px 18px;
+      max-width: 280px;
+      z-index: 999;
+      box-shadow: 0 4px 20px rgba(18,48,71,.12);
+    }
+    #tooltip .tip-id   { font-size: 11px; letter-spacing: 1.5px; color: #7a9eb0; margin-bottom: 3px; text-transform: uppercase; }
+    #tooltip .tip-cat  { font-size: 11px; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    #tooltip .tip-title{ font-size: 15px; font-weight: 700; color: #123047; margin-bottom: 6px; line-height: 1.3; }
+    #tooltip .tip-var  { font-size: 13px; color: #4b6b7c; margin-bottom: 6px; }
+    #tooltip .tip-edges{ font-size: 12px; color: #4b6b7c; border-top: 1px solid #dce9f2; padding-top: 6px; margin-top: 4px; line-height: 1.6; }
+
+    /* ── Legend ── */
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      padding: 12px 40px;
+      background: #f7fbff;
+      border-top: 1px solid #dce9f2;
+      font-size: 13px;
+      color: #123047;
+    }
+    .leg-item { display: flex; align-items: center; gap: 7px; }
+    .leg-dot  { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid #123047; flex-shrink: 0; }
+    .leg-line { width: 30px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+    .leg-thin { width: 30px; height: 1.5px; border-radius: 1px; flex-shrink: 0; }
+    .leg-sep  { width: 1px; height: 18px; background: #b8d4e8; }
+
+    /* ── Nav ── */
+    .back-nav {
+      position: absolute;
+      top: 12px; left: 40px;
+      font-size: 13px;
+      color: #2db6ff;
+      text-decoration: none;
+      z-index: 10;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Aristotle — Probabilistic Misconception Network</h1>
+  <p>Expanded argumentation model: node size encodes variance; thick links show weighted covariance; thin solid links show weak probabilistic branching paths across and within clusters.</p>
+  <div class="header-meta">
+    <span class="badge nodes">55 nodes</span>
+    <span class="badge edges">72 weighted edges</span>
+    <span class="badge prob">119 probability paths</span>
+    <span class="badge nodes" style="border-color:#c7833f;color:#7a3a00;background:#fff7f0">M1 Soil</span>
+    <span class="badge nodes" style="border-color:#2db6ff;color:#005a80;background:#f0faff">M2 Water</span>
+    <span class="badge nodes" style="border-color:#54d6c8;color:#0a5a52;background:#f0faf8">M3 Air</span>
+    <span class="badge nodes" style="border-color:#e8b800;color:#6b4f00;background:#fffae0">M4 Light</span>
+    <span class="badge nodes" style="border-color:#b782ff;color:#4a1fa0;background:#f8f2ff">Integration</span>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <label>Show prob. links</label>
+    <button id="btn-prob" class="active" onclick="toggleProb()">ON</button>
+  </div>
+  <div class="ctrl-group">
+    <label>Prob. threshold ≥</label>
+    <input type="range" id="prob-thresh" min="0.1" max="0.5" step="0.01" value="0.20" oninput="onThresh(this)"/>
+    <span class="val-display" id="thresh-val">0.20</span>
+  </div>
+  <div class="ctrl-group">
+    <label>Highlight cluster</label>
+    <select id="cluster-sel" onchange="onCluster(this)">
+      <option value="">All</option>
+      <option value="soil">M1 Soil</option>
+      <option value="water">M2 Water</option>
+      <option value="air">M3 Air</option>
+      <option value="light">M4 Light</option>
+      <option value="integration">Integration</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label>Node labels</label>
+    <button id="btn-labels" class="active" onclick="toggleLabels()">ON</button>
+  </div>
+  <div class="ctrl-group">
+    <button onclick="resetView()">Reset view</button>
+  </div>
+</div>
+
+<div class="canvas-wrap">
+  <canvas id="net-canvas"></canvas>
+  <div id="tooltip">
+    <div class="tip-id" id="t-id"></div>
+    <div class="tip-cat" id="t-cat"></div>
+    <div class="tip-title" id="t-title"></div>
+    <div class="tip-var" id="t-var"></div>
+    <div class="tip-edges" id="t-edges"></div>
+  </div>
+</div>
+
+<div class="legend-bar">
+  <div class="leg-item"><div class="leg-dot" style="background:#c7833f"></div>M1 Soil / Humus</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#2db6ff"></div>M2 Water</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#54d6c8"></div>M3 Air</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#ffd35a;border-color:#b89000"></div>M4 Light / Energy</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#b782ff"></div>Integration</div>
+  <div class="leg-sep"></div>
+  <div class="leg-item"><div class="leg-line" style="background:#555;height:4px"></div>Thick = high covariance weight</div>
+  <div class="leg-item"><div class="leg-thin" style="background:#888"></div>Thin = weak probability path</div>
+  <div class="leg-item"><span style="font-size:13px">⬤ size = variance</span></div>
+  <div class="leg-item"><span style="font-size:13px">↔ bidirectional covariance &nbsp; → directional traversal</span></div>
+  <div class="leg-sep"></div>
+  <div class="leg-item"><a href="index.html" style="color:#2db6ff;text-decoration:none;font-size:13px">← Back to v1 network</a></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  DATA — sourced from JSON
+// ══════════════════════════════════════════════════════════
+const CAT_COLORS = {
+  soil:        { fill:'#c7833f', stroke:'#7a3a00', cross:'#9a5a1f', label:'M1 Soil / Humus' },
+  water:       { fill:'#2db6ff', stroke:'#005a80', cross:'#0074a8', label:'M2 Water' },
+  air:         { fill:'#54d6c8', stroke:'#0a5a52', cross:'#168c80', label:'M3 Air' },
+  light:       { fill:'#ffd35a', stroke:'#7a5c00', cross:'#9a7300', label:'M4 Light / Energy' },
+  integration: { fill:'#b782ff', stroke:'#4a1fa0', cross:'#6f3fc4', label:'Integration' },
+};
+
+const NODES = [
+  {id:'M1.00',cat:'soil',      label:['Soil as','Sole Source'],   cx:260, cy:515, r:33,   var:0.95},
+  {id:'M1.01',cat:'soil',      label:['Humus as','Plant Food'],   cx:245, cy:330, r:28.5, var:0.88},
+  {id:'M1.02',cat:'soil',      label:['Excrement /','Decayed Life'], cx:400, cy:245, r:27.2, var:0.86},
+  {id:'M1.03',cat:'soil',      label:['Like','Nourishes Like'],   cx:610, cy:270, r:22.3, var:0.78},
+  {id:'M1.04',cat:'soil',      label:['Plant-Animal','Analogy'],  cx:760, cy:420, r:21.2, var:0.76},
+  {id:'M1.05',cat:'soil',      label:['External','Stomach'],      cx:700, cy:610, r:31,   var:0.92},
+  {id:'M1.06',cat:'soil',      label:['Elaboration','in Soil'],   cx:485, cy:580, r:26,   var:0.84},
+  {id:'M1.07',cat:'soil',      label:['Growth as','Accretion'],   cx:390, cy:760, r:22.3, var:0.78},
+  {id:'M1.08',cat:'soil',      label:['Roots as','Sole Organ'],   cx:210, cy:805, r:27.2, var:0.86},
+  {id:'M1.09',cat:'soil',      label:['Leaves Not','Nutritive'],  cx:545, cy:805, r:20,   var:0.74},
+  {id:'M1.10',cat:'soil',      label:['Savours /','Soil Qualities'], cx:520, cy:420, r:18.9, var:0.72},
+  {id:'M1.11',cat:'soil',      label:['Pre-Prepared','Food'],     cx:315, cy:610, r:26,   var:0.84},
+  {id:'M1.12',cat:'soil',      label:['Manure & Ash','Fertility'],cx:730, cy:795, r:29.7, var:null},
+  {id:'M1.13',cat:'soil',      label:['Mineral Salts','as Body'], cx:845, cy:665, r:18.9, var:0.72},
+  {id:'M1.14',cat:'soil',      label:['Nutrients','as Vitamins'], cx:840, cy:900, r:22.3, var:0.78},
+  {id:'M1.15',cat:'soil',      label:['Aquatic Plant','Pressure'],cx:930, cy:535, r:24.7, var:0.82},
+  {id:'M2.00',cat:'water',     label:['Visible Water','Dependence'], cx:1080, cy:270, r:29.7, var:0.90},
+  {id:'M2.01',cat:'water',     label:['Water as','Sole Source'],  cx:980,  cy:410, r:31,   var:0.92},
+  {id:'M2.02',cat:'water',     label:['Seed Awakes','by Water'],  cx:1135, cy:500, r:20,   var:0.74},
+  {id:'M2.03',cat:'water',     label:['Water as','Life Principle'], cx:1285, cy:380, r:18.9, var:0.72},
+  {id:'M2.04',cat:'water',     label:['van Helmont','Balance'],   cx:1270, cy:610, r:33,   var:0.95},
+  {id:'M2.05',cat:'water',     label:['Soil Mass','Unchanged'],   cx:1125, cy:720, r:28.5, var:0.88},
+  {id:'M2.06',cat:'water',     label:['Added Input','Was Water'], cx:1415, cy:715, r:27.2, var:0.86},
+  {id:'M2.07',cat:'water',     label:['Sap / Juice','Identity'],  cx:1420, cy:500, r:16.7, var:0.68},
+  {id:'M2.08',cat:'water',     label:['Fresh vs','Dry Mass'],     cx:990,  cy:805, r:26,   var:0.84},
+  {id:'M2.09',cat:'water',     label:['Transpiration','Ignored'], cx:1325, cy:860, r:13.7, var:0.62},
+  {id:'M2.10',cat:'water',     label:['Water Carries','Earth'],   cx:1485, cy:610, r:22.3, var:0.78},
+  {id:'M2.11',cat:'water',     label:['Aquatic Plants','as Proof'], cx:1045, cy:610, r:21.2, var:0.76},
+  {id:'M3.00',cat:'air',       label:['Air as','Empty'],          cx:1590, cy:250, r:28.5, var:0.88},
+  {id:'M3.01',cat:'air',       label:['Air as','Weightless'],     cx:1780, cy:250, r:31,   var:0.92},
+  {id:'M3.02',cat:'air',       label:['Gas Not','Matter'],        cx:1960, cy:365, r:24.7, var:0.82},
+  {id:'M3.03',cat:'air',       label:['Invisible Cannot','Build Visible'], cx:1965, cy:560, r:27.2, var:0.86},
+  {id:'M3.04',cat:'air',       label:['Carbon in Air','Unintuitive'], cx:1765, cy:640, r:31,   var:0.92},
+  {id:'M3.05',cat:'air',       label:['Atmosphere','Not Weighed'], cx:1565, cy:560, r:28.5, var:0.88},
+  {id:'M3.06',cat:'air',       label:['Fixed Air','Unknown'],     cx:1655, cy:420, r:21.2, var:0.76},
+  {id:'M3.07',cat:'air',       label:['Air Purity','Not Food'],   cx:1840, cy:455, r:20,   var:0.74},
+  {id:'M3.08',cat:'air',       label:['Gas Exchange','Ignored'],  cx:1630, cy:790, r:22.3, var:0.78},
+  {id:'M3.09',cat:'air',       label:['Leaves Breathe','Only'],   cx:1870, cy:810, r:17.8, var:0.70},
+  {id:'M3.10',cat:'air',       label:['Air as Invisible','Storehouse'], cx:1760, cy:930, r:27.2, var:0.86},
+  {id:'M3.11',cat:'air',       label:['Leaf as','Doorway'],       cx:1540, cy:925, r:23.5, var:0.80},
+  {id:'M4.00',cat:'light',     label:['Sun Causes','Growth'],     cx:1455, cy:1055, r:26,  var:0.84},
+  {id:'M4.01',cat:'light',     label:['Light as','Substance'],    cx:1615, cy:1135, r:20,  var:0.74},
+  {id:'M4.02',cat:'light',     label:['Light as','Refinement'],   cx:1815, cy:1110, r:15.7,var:0.66},
+  {id:'M4.03',cat:'light',     label:['Heat / Vital','Force Builds'], cx:1980, cy:1010, r:13.7,var:0.62},
+  {id:'M4.04',cat:'light',     label:['Darkness =','No Food'],    cx:1980, cy:1215, r:17.8,var:0.70},
+  {id:'M4.05',cat:'light',     label:['Oxygen From','Light'],     cx:1800, cy:1275, r:12,  var:0.58},
+  {id:'M4.06',cat:'light',     label:['Energy Becomes','Mass'],   cx:1600, cy:1290, r:18.9,var:0.72},
+  {id:'M4.07',cat:'light',     label:['E = mc²','Misuse'],        cx:1415, cy:1220, r:12.8,var:0.60},
+  {id:'M4.08',cat:'light',     label:['Leaf as','Workshop'],      cx:1230, cy:1110, r:26,  var:0.84},
+  {id:'M4.09',cat:'light',     label:['Light as','Worker'],       cx:1240, cy:1280, r:28.5,var:0.88},
+  {id:'I.00', cat:'integration',label:['Necessary vs','Sufficient'], cx:720,  cy:1170, r:24.7,var:0.82},
+  {id:'I.01', cat:'integration',label:['Visible vs','Invisible Accounting'], cx:930, cy:1210, r:27.2,var:0.86},
+  {id:'I.02', cat:'integration',label:['Matter-Energy','Distinction'], cx:1035, cy:1040, r:29.7,var:0.90},
+  {id:'I.03', cat:'integration',label:['Active Internal','Chemistry'], cx:760,  cy:1010, r:26,  var:0.84},
+  {id:'I.04', cat:'integration',label:['Role Assignment:','soil water air light'], cx:510, cy:1090, r:31, var:0.92},
+];
+
+// Main weighted edges
+const MAIN_EDGES = [
+  {s:'M1.00',t:'M1.01',w:0.88,sw:6.27,op:0.42,bi:true},
+  {s:'M1.01',t:'M1.02',w:0.82,sw:5.10,op:0.38,bi:true},
+  {s:'M1.02',t:'M1.03',w:0.80,sw:4.74,op:0.36,bi:true},
+  {s:'M1.03',t:'M1.04',w:0.72,sw:3.44,op:0.30,bi:true},
+  {s:'M1.04',t:'M1.05',w:0.92,sw:7.12,op:0.46,bi:true},
+  {s:'M1.05',t:'M1.06',w:0.90,sw:6.69,op:0.44,bi:true},
+  {s:'M1.06',t:'M1.11',w:0.88,sw:6.27,op:0.42,bi:true},
+  {s:'M1.11',t:'M1.00',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M1.00',t:'M1.08',w:0.86,sw:5.86,op:0.41,bi:true},
+  {s:'M1.08',t:'M1.09',w:0.78,sw:4.39,op:0.35,bi:true},
+  {s:'M1.09',t:'M1.05',w:0.74,sw:3.74,op:0.32,bi:true},
+  {s:'M1.00',t:'M1.10',w:0.74,sw:3.74,op:0.32,bi:true},
+  {s:'M1.10',t:'M1.06',w:0.70,sw:3.15,op:0.29,bi:true},
+  {s:'M1.06',t:'M1.07',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M1.07',t:'M1.12',w:0.78,sw:4.39,op:0.35,bi:true},
+  {s:'M1.12',t:'M1.13',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M1.13',t:'M1.14',w:0.72,sw:3.44,op:0.30,bi:true},
+  {s:'M1.15',t:'M1.13',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M1.15',t:'M1.05',w:0.62,sw:2.15,op:0.24,bi:true},
+  {s:'M2.00',t:'M2.01',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M2.02',t:'M2.00',w:0.74,sw:3.74,op:0.32,bi:true},
+  {s:'M2.03',t:'M2.01',w:0.76,sw:4.06,op:0.33,bi:true},
+  {s:'M2.04',t:'M2.05',w:0.92,sw:7.12,op:0.46,bi:true},
+  {s:'M2.04',t:'M2.06',w:0.94,sw:7.58,op:0.47,bi:true},
+  {s:'M2.05',t:'M2.01',w:0.82,sw:5.10,op:0.38,bi:true},
+  {s:'M2.06',t:'M2.01',w:0.86,sw:5.86,op:0.41,bi:true},
+  {s:'M2.07',t:'M2.08',w:0.76,sw:4.06,op:0.33,bi:true},
+  {s:'M2.08',t:'M2.09',w:0.70,sw:3.15,op:0.29,bi:true},
+  {s:'M2.10',t:'M2.01',w:0.68,sw:2.88,op:0.28,bi:true},
+  {s:'M2.11',t:'M2.10',w:0.80,sw:4.74,op:0.36,bi:true},
+  {s:'M2.04',t:'M2.01',w:0.88,sw:6.27,op:0.42,bi:true},
+  {s:'M3.00',t:'M3.01',w:0.90,sw:6.69,op:0.44,bi:true},
+  {s:'M3.01',t:'M3.02',w:0.82,sw:5.10,op:0.38,bi:true},
+  {s:'M3.02',t:'M3.03',w:0.80,sw:4.74,op:0.36,bi:true},
+  {s:'M3.03',t:'M3.04',w:0.86,sw:5.86,op:0.41,bi:true},
+  {s:'M3.06',t:'M3.04',w:0.78,sw:4.39,op:0.35,bi:true},
+  {s:'M3.05',t:'M3.04',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M3.07',t:'M3.09',w:0.70,sw:3.15,op:0.29,bi:true},
+  {s:'M3.08',t:'M3.05',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M3.09',t:'M3.11',w:0.62,sw:2.15,op:0.24,bi:true},
+  {s:'M3.04',t:'M3.10',w:0.86,sw:5.86,op:0.41,bi:true},
+  {s:'M3.10',t:'M3.11',w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'M3.11',t:'M3.08',w:0.72,sw:3.44,op:0.30,bi:true},
+  {s:'M4.00',t:'M4.01',w:0.78,sw:4.39,op:0.35,bi:true},
+  {s:'M4.00',t:'M4.04',w:0.76,sw:4.06,op:0.33,bi:true},
+  {s:'M4.01',t:'M4.02',w:0.64,sw:2.38,op:0.25,bi:true},
+  {s:'M4.02',t:'M4.03',w:0.58,sw:1.73,op:0.21,bi:true},
+  {s:'M4.05',t:'M4.00',w:0.60,sw:1.93,op:0.22,bi:true},
+  {s:'M4.06',t:'M4.07',w:0.82,sw:5.10,op:0.38,bi:true},
+  {s:'M4.06',t:'I.02', w:0.90,sw:6.69,op:0.44,bi:false},
+  {s:'M4.08',t:'M4.09',w:0.88,sw:6.27,op:0.42,bi:true},
+  {s:'M4.09',t:'M4.06',w:0.86,sw:5.86,op:0.41,bi:true},
+  {s:'M4.08',t:'M4.00',w:0.72,sw:3.44,op:0.30,bi:true},
+  {s:'I.04', t:'I.00', w:0.86,sw:5.86,op:0.41,bi:true},
+  {s:'I.04', t:'I.01', w:0.82,sw:5.10,op:0.38,bi:true},
+  {s:'I.01', t:'I.03', w:0.84,sw:5.47,op:0.39,bi:true},
+  {s:'I.03', t:'I.02', w:0.78,sw:4.39,op:0.35,bi:true},
+  {s:'I.02', t:'I.04', w:0.80,sw:4.74,op:0.36,bi:true},
+  // Cross-cluster directional traversal
+  {s:'M1.15',t:'M2.10',w:0.88,sw:6.27,op:0.42,bi:false,cross:true},
+  {s:'M1.14',t:'M3.04',w:0.90,sw:6.69,op:0.44,bi:false,cross:true},
+  {s:'M1.09',t:'M3.11',w:0.76,sw:4.06,op:0.33,bi:false,cross:true},
+  {s:'M1.13',t:'I.00', w:0.82,sw:5.10,op:0.38,bi:false,cross:true},
+  {s:'M2.04',t:'M3.05',w:0.90,sw:6.69,op:0.44,bi:false,cross:true},
+  {s:'M2.08',t:'M3.04',w:0.72,sw:3.44,op:0.30,bi:false,cross:true},
+  {s:'M2.10',t:'M1.13',w:0.76,sw:4.06,op:0.33,bi:false,cross:true},
+  {s:'M2.09',t:'I.01', w:0.80,sw:4.74,op:0.36,bi:false,cross:true},
+  {s:'M3.11',t:'M4.08',w:0.88,sw:6.27,op:0.42,bi:false,cross:true},
+  {s:'M3.04',t:'M4.06',w:0.66,sw:2.62,op:0.26,bi:false,cross:true},
+  {s:'M3.10',t:'I.01', w:0.86,sw:5.86,op:0.41,bi:false,cross:true},
+  {s:'M4.09',t:'I.02', w:0.92,sw:7.12,op:0.46,bi:false,cross:true},
+  {s:'M4.08',t:'I.03', w:0.84,sw:5.47,op:0.39,bi:false,cross:true},
+  {s:'I.04', t:'M1.14',w:0.44,sw:0.68,op:0.13,bi:false,cross:true},
+];
+
+// Probability edges
+const PROB_EDGES = [
+  {s:'M1.02',t:'M1.12',p:0.34,sw:1.75,op:0.26,stroke:'#9a5a1f'},
+  {s:'M1.10',t:'M1.13',p:0.30,sw:1.43,op:0.23,stroke:'#9a5a1f'},
+  {s:'M1.07',t:'M1.14',p:0.26,sw:1.13,op:0.20,stroke:'#9a5a1f'},
+  {s:'M1.08',t:'M2.11',p:0.28,sw:1.27,op:0.22,stroke:'#5d7380'},
+  {s:'M1.11',t:'M2.10',p:0.32,sw:1.58,op:0.25,stroke:'#5d7380'},
+  {s:'M1.06',t:'M3.08',p:0.24,sw:0.99,op:0.19,stroke:'#5d7380'},
+  {s:'M1.12',t:'M2.08',p:0.31,sw:1.50,op:0.24,stroke:'#5d7380'},
+  {s:'M2.02',t:'M2.07',p:0.30,sw:1.43,op:0.23,stroke:'#0074a8'},
+  {s:'M2.03',t:'M2.11',p:0.27,sw:1.20,op:0.21,stroke:'#0074a8'},
+  {s:'M2.05',t:'M3.05',p:0.38,sw:2.08,op:0.29,stroke:'#5d7380'},
+  {s:'M2.06',t:'M3.00',p:0.25,sw:1.05,op:0.19,stroke:'#5d7380'},
+  {s:'M2.09',t:'I.01', p:0.35,sw:1.83,op:0.27,stroke:'#5d7380'},
+  {s:'M2.07',t:'M4.00',p:0.23,sw:0.92,op:0.18,stroke:'#5d7380'},
+  {s:'M3.00',t:'M3.07',p:0.30,sw:1.43,op:0.23,stroke:'#168c80'},
+  {s:'M3.02',t:'M3.08',p:0.29,sw:1.35,op:0.22,stroke:'#168c80'},
+  {s:'M3.03',t:'M4.06',p:0.33,sw:1.66,op:0.25,stroke:'#5d7380'},
+  {s:'M3.06',t:'M4.08',p:0.26,sw:1.13,op:0.20,stroke:'#5d7380'},
+  {s:'M3.09',t:'M4.04',p:0.24,sw:0.99,op:0.19,stroke:'#5d7380'},
+  {s:'M3.10',t:'M4.09',p:0.36,sw:1.91,op:0.28,stroke:'#5d7380'},
+  {s:'M4.01',t:'M4.05',p:0.28,sw:1.27,op:0.22,stroke:'#9a7300'},
+  {s:'M4.02',t:'M4.06',p:0.30,sw:1.43,op:0.23,stroke:'#9a7300'},
+  {s:'M4.03',t:'M4.07',p:0.22,sw:0.85,op:0.17,stroke:'#9a7300'},
+  {s:'M4.04',t:'M4.01',p:0.29,sw:1.35,op:0.22,stroke:'#9a7300'},
+  {s:'M4.05',t:'M4.06',p:0.34,sw:1.75,op:0.26,stroke:'#9a7300'},
+  {s:'I.00', t:'I.02', p:0.40,sw:2.25,op:0.31,stroke:'#6f3fc4'},
+  {s:'I.01', t:'I.02', p:0.42,sw:2.42,op:0.32,stroke:'#6f3fc4'},
+  {s:'I.03', t:'I.04', p:0.38,sw:2.08,op:0.29,stroke:'#6f3fc4'},
+  // Extended weak probability edges
+  {s:'M1.01',t:'M1.12',p:0.22,sw:0.85,op:0.17,stroke:'#9a5a1f'},
+  {s:'M1.03',t:'M1.13',p:0.20,sw:0.71,op:0.16,stroke:'#9a5a1f'},
+  {s:'M1.04',t:'M1.09',p:0.24,sw:0.99,op:0.19,stroke:'#9a5a1f'},
+  {s:'M1.05',t:'M1.14',p:0.28,sw:1.27,op:0.22,stroke:'#9a5a1f'},
+  {s:'M2.01',t:'M2.11',p:0.26,sw:1.13,op:0.20,stroke:'#0074a8'},
+  {s:'M2.02',t:'M2.04',p:0.32,sw:1.58,op:0.25,stroke:'#0074a8'},
+  {s:'M2.07',t:'M2.09',p:0.25,sw:1.05,op:0.19,stroke:'#0074a8'},
+  {s:'M2.08',t:'I.01', p:0.34,sw:1.75,op:0.26,stroke:'#5d7380'},
+  {s:'M3.01',t:'M3.07',p:0.28,sw:1.27,op:0.22,stroke:'#168c80'},
+  {s:'M3.05',t:'M3.08',p:0.32,sw:1.58,op:0.25,stroke:'#168c80'},
+  {s:'M3.06',t:'M3.09',p:0.20,sw:0.71,op:0.16,stroke:'#168c80'},
+  {s:'M3.07',t:'M3.10',p:0.24,sw:0.99,op:0.19,stroke:'#168c80'},
+  {s:'M4.00',t:'M4.06',p:0.26,sw:1.13,op:0.20,stroke:'#9a7300'},
+  {s:'M4.03',t:'M4.06',p:0.30,sw:1.43,op:0.23,stroke:'#9a7300'},
+  {s:'I.00', t:'I.03', p:0.36,sw:1.91,op:0.28,stroke:'#6f3fc4'},
+  {s:'I.02', t:'I.01', p:0.38,sw:2.08,op:0.29,stroke:'#6f3fc4'},
+];
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+const canvas = document.getElementById('net-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H, scale, offsetX, offsetY;
+const SVG_W = 2200, SVG_H = 1600;
+let hoveredNode     = null;
+let activeCluster   = '';
+let showProb        = true;
+let showLabels      = true;
+let probThresh      = 0.20;
+
+// Build lookup maps
+const nodeMap = {};
+NODES.forEach(n => nodeMap[n.id] = n);
+
+function getEdgeColor(e) {
+  if (e.cross) return '#888';
+  const cat = nodeMap[e.s]?.cat;
+  return cat ? CAT_COLORS[cat].fill : '#888';
+}
+
+// ══════════════════════════════════════════════════════════
+//  TRANSFORMS  (SVG coords → canvas coords)
+// ══════════════════════════════════════════════════════════
+function toCanvas(x, y) {
+  return { x: offsetX + x * scale, y: offsetY + y * scale };
+}
+function computeTransform() {
+  const pad = 40;
+  const scaleX = (W - pad * 2) / SVG_W;
+  const scaleY = (H - pad * 2) / SVG_H;
+  scale   = Math.min(scaleX, scaleY);
+  offsetX = (W - SVG_W * scale) / 2;
+  offsetY = (H - SVG_H * scale) / 2;
+}
+function resetView() { computeTransform(); draw(); }
+
+// ══════════════════════════════════════════════════════════
+//  ARROWHEAD helper
+// ══════════════════════════════════════════════════════════
+function drawArrow(ctx, x, y, angle, size, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-size, -size * 0.45);
+  ctx.lineTo(-size, size * 0.45);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════
+//  DRAW
+// ══════════════════════════════════════════════════════════
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  // Panel
+  const p1 = toCanvas(60, 135), p2 = toCanvas(2140, 1520);
+  ctx.fillStyle = '#f7fbff';
+  ctx.strokeStyle = '#b8d4e8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, 14 * scale);
+  ctx.fill(); ctx.stroke();
+
+  // Cluster labels
+  drawClusterLabels();
+
+  // Probability edges (drawn first, behind main edges)
+  if (showProb) {
+    PROB_EDGES.forEach(e => {
+      if (e.p < probThresh) return;
+      const sn = nodeMap[e.s], tn = nodeMap[e.t];
+      if (!sn || !tn) return;
+      const dimmed = activeCluster && sn.cat !== activeCluster && tn.cat !== activeCluster;
+      if (dimmed) return;
+      const sc = toCanvas(sn.cx, sn.cy);
+      const tc = toCanvas(tn.cx, tn.cy);
+      const nr = sn.r * scale;
+      const tr = tn.r * scale;
+      const dx = tc.x - sc.x, dy = tc.y - sc.y;
+      const dist = Math.sqrt(dx*dx+dy*dy)||1;
+      const sx = sc.x + (dx/dist)*nr, sy = sc.y + (dy/dist)*nr;
+      const ex = tc.x - (dx/dist)*(tr+4*scale), ey = tc.y - (dy/dist)*(tr+4*scale);
+
+      ctx.save();
+      ctx.globalAlpha = e.op * (activeCluster ? 0.5 : 1.0);
+      ctx.strokeStyle = e.stroke;
+      ctx.lineWidth = Math.max(0.5, e.sw * scale * 0.35);
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  // Main weighted edges
+  MAIN_EDGES.forEach(e => {
+    const sn = nodeMap[e.s], tn = nodeMap[e.t];
+    if (!sn || !tn) return;
+
+    const isHovered = hoveredNode && (sn.id === hoveredNode.id || tn.id === hoveredNode.id);
+    const dimmed = hoveredNode
+      ? !isHovered
+      : activeCluster
+        ? (sn.cat !== activeCluster && tn.cat !== activeCluster)
+        : false;
+
+    const sc = toCanvas(sn.cx, sn.cy);
+    const tc = toCanvas(tn.cx, tn.cy);
+    const snr = sn.r * scale, tnr = tn.r * scale;
+    const dx = tc.x - sc.x, dy = tc.y - sc.y;
+    const dist = Math.sqrt(dx*dx+dy*dy)||1;
+
+    // Offset arrows slightly for bidi
+    const perp_x = -dy/dist * 3 * scale, perp_y = dx/dist * 3 * scale;
+    const sx = sc.x + (dx/dist)*snr + (e.bi ? perp_x : 0);
+    const sy = sc.y + (dy/dist)*snr + (e.bi ? perp_y : 0);
+    const ex = tc.x - (dx/dist)*(tnr+6*scale) + (e.bi ? perp_x : 0);
+    const ey = tc.y - (dy/dist)*(tnr+6*scale) + (e.bi ? perp_y : 0);
+
+    const color = e.cross ? '#888888' : CAT_COLORS[sn.cat].fill;
+    const alpha = dimmed ? 0.08 : (isHovered ? 1.0 : e.op);
+    const lw    = Math.max(0.8, e.sw * scale * 0.38);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+
+    // Slight curve for cross-cluster
+    ctx.beginPath();
+    if (e.cross) {
+      const cx_ = (sx+ex)/2 + (-dy/dist)*40*scale;
+      const cy_ = (sy+ey)/2 + (dx/dist)*40*scale;
+      ctx.moveTo(sx,sy);
+      ctx.quadraticCurveTo(cx_,cy_,ex,ey);
+    } else {
+      ctx.moveTo(sx, sy); ctx.lineTo(ex, ey);
+    }
+    ctx.stroke();
+
+    // Arrowhead at end
+    const angle = Math.atan2(ey - sy, ex - sx);
+    const aSize = Math.max(6, lw * 3) * scale * 0.6;
+    drawArrow(ctx, ex, ey, angle, aSize, color, alpha);
+
+    // Bidirectional: reverse arrow
+    if (e.bi) {
+      const rx = sc.x + (dx/dist)*snr - perp_x;
+      const ry = sc.y + (dy/dist)*snr - perp_y;
+      const rex = sc.x + (dx/dist)*(snr+6*scale) - perp_x;
+      const rey = sc.y + (dy/dist)*(snr+6*scale) - perp_y;
+      const rangle = Math.atan2(rey - ey, rex - ex) + Math.PI;
+      drawArrow(ctx, rx, ry, rangle, aSize, color, alpha);
+    }
+
+    ctx.restore();
+  });
+
+  // Nodes
+  NODES.forEach(n => {
+    const isHovered  = hoveredNode && n.id === hoveredNode.id;
+    const isConnected = hoveredNode && !isHovered && isAdjacentTo(n.id, hoveredNode.id);
+    const dimmedHov  = hoveredNode && !isHovered && !isConnected;
+    const dimmedClu  = !hoveredNode && activeCluster && n.cat !== activeCluster;
+    const dimmed     = dimmedHov || dimmedClu;
+
+    const p = toCanvas(n.cx, n.cy);
+    const r = n.r * scale;
+    const col = CAT_COLORS[n.cat];
+    const alpha = dimmed ? 0.18 : 1.0;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Shadow/lift on hover
+    if (isHovered || isConnected) {
+      ctx.shadowColor = col.fill;
+      ctx.shadowBlur  = 14 * scale;
+    }
+
+    // Node fill
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+    ctx.fillStyle = col.fill;
+    ctx.fill();
+    ctx.strokeStyle = col.stroke;
+    ctx.lineWidth = isHovered ? 2.5 * scale : 1.7 * scale;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Label
+    if (showLabels && !dimmed) {
+      const lines = n.label;
+      const fs = Math.max(10, 14 * scale);
+      ctx.font = `700 ${fs}px 'Didact Gothic', Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // White stroke for legibility
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3.5 * scale;
+      const lh = fs * 1.25;
+      const startY = p.y + r + fs * 0.9 - (lines.length-1) * lh / 2;
+      lines.forEach((line, i) => {
+        ctx.strokeText(line, p.x, startY + i*lh);
+        ctx.fillStyle = col.stroke;
+        ctx.fillText(line, p.x, startY + i*lh);
+      });
+
+      // Node ID small
+      const idFs = Math.max(8, 11 * scale);
+      ctx.font = `${idFs}px 'Didact Gothic', Arial, sans-serif`;
+      ctx.fillStyle = '#7a9eb0';
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2.5;
+      ctx.strokeText(n.id, p.x, p.y);
+      ctx.fillText(n.id, p.x, p.y);
+    }
+
+    ctx.restore();
+  });
+}
+
+function drawClusterLabels() {
+  const labels = [
+    {x:255, y:175, color:'#9a5a1f', text:'M1 Soil / Humus / External Stomach'},
+    {x:1080,y:175, color:'#0074a8', text:'M2 Water as Substance'},
+    {x:1640,y:175, color:'#168c80', text:'M3 Air as Empty or Weightless'},
+    {x:1520,y:1015,color:'#9a7300', text:'M4 Light / Energy as Mass'},
+    {x:610, y:995, color:'#6f3fc4', text:'Integration and Corrective Bridges'},
+  ];
+  labels.forEach(l => {
+    const p = toCanvas(l.x, l.y);
+    const fs = Math.max(13, 22 * scale);
+    ctx.save();
+    ctx.globalAlpha = activeCluster ? 0.35 : 0.85;
+    ctx.font = `700 ${fs}px 'Didact Gothic', Arial, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = l.color;
+    ctx.fillText(l.text, p.x, p.y);
+    ctx.restore();
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  HOVER / INTERACTION
+// ══════════════════════════════════════════════════════════
+function isAdjacentTo(nodeId, hoverId) {
+  return MAIN_EDGES.some(e =>
+    (e.s === hoverId && e.t === nodeId) ||
+    (e.t === hoverId && e.s === nodeId && e.bi)
+  );
+}
+
+function getConnectedEdges(nodeId) {
+  const main = MAIN_EDGES.filter(e => e.s === nodeId || (e.t === nodeId && e.bi));
+  const prob = PROB_EDGES.filter(e => e.s === nodeId || e.t === nodeId);
+  return { main, prob };
+}
+
+function svgCoords(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const cx   = clientX - rect.left;
+  const cy   = clientY - rect.top;
+  return { svgX: (cx - offsetX) / scale, svgY: (cy - offsetY) / scale };
+}
+
+function hitTest(clientX, clientY) {
+  const {svgX, svgY} = svgCoords(clientX, clientY);
+  for (let i = NODES.length-1; i >= 0; i--) {
+    const n = NODES[i];
+    if ((svgX-n.cx)**2 + (svgY-n.cy)**2 <= (n.r+6)**2) return n;
+  }
+  return null;
+}
+
+function showTooltip(n, clientX, clientY) {
+  const tip = document.getElementById('tooltip');
+  const col = CAT_COLORS[n.cat];
+  document.getElementById('t-id').textContent    = n.id;
+  document.getElementById('t-cat').textContent   = col.label;
+  document.getElementById('t-cat').style.color   = col.stroke;
+  document.getElementById('t-title').textContent = n.label.join(' ');
+  document.getElementById('t-var').textContent   = n.var != null ? `Variance: ${n.var.toFixed(2)}` : 'Variance: —';
+
+  const {main, prob} = getConnectedEdges(n.id);
+  const topMain = main.slice(0,5).map(e => {
+    const other = e.s === n.id ? e.t : e.s;
+    const dir   = e.bi ? '↔' : (e.s === n.id ? '→' : '←');
+    return `${dir} ${other} (w=${e.w.toFixed(2)})`;
+  });
+  const topProb = prob.slice(0,3).map(e => {
+    const other = e.s === n.id ? e.t : e.s;
+    return `⤳ ${other} (p=${e.p.toFixed(2)})`;
+  });
+  const allLines = [...topMain, ...(topProb.length ? ['— prob paths —', ...topProb] : [])];
+  document.getElementById('t-edges').innerHTML = allLines.join('<br>') || 'No connections shown';
+
+  const rect = canvas.getBoundingClientRect();
+  tip.style.display = 'block';
+  let left = clientX + 16, top = clientY - 10;
+  if (left + 290 > rect.right)  left = clientX - 300;
+  if (top  + 200 > rect.bottom) top  = clientY - 210;
+  tip.style.left = left + 'px';
+  tip.style.top  = top  + 'px';
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+canvas.addEventListener('mousemove', e => {
+  const found = hitTest(e.clientX, e.clientY);
+  if (found !== hoveredNode) {
+    hoveredNode = found;
+    if (found) { showTooltip(found, e.clientX, e.clientY); canvas.style.cursor = 'pointer'; }
+    else        { hideTooltip(); canvas.style.cursor = 'default'; }
+    draw();
+  } else if (found) {
+    showTooltip(found, e.clientX, e.clientY);
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredNode = null;
+  hideTooltip();
+  draw();
+});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const found = hitTest(t.clientX, t.clientY);
+  if (found !== hoveredNode) {
+    hoveredNode = found;
+    if (found) showTooltip(found, t.clientX, t.clientY);
+    else       hideTooltip();
+    draw();
+  }
+}, { passive: false });
+
+// ══════════════════════════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════════════════════════
+function toggleProb() {
+  showProb = !showProb;
+  const btn = document.getElementById('btn-prob');
+  btn.textContent = showProb ? 'ON' : 'OFF';
+  btn.classList.toggle('active', showProb);
+  draw();
+}
+function toggleLabels() {
+  showLabels = !showLabels;
+  const btn = document.getElementById('btn-labels');
+  btn.textContent = showLabels ? 'ON' : 'OFF';
+  btn.classList.toggle('active', showLabels);
+  draw();
+}
+function onThresh(el) {
+  probThresh = parseFloat(el.value);
+  document.getElementById('thresh-val').textContent = probThresh.toFixed(2);
+  draw();
+}
+function onCluster(sel) {
+  activeCluster = sel.value;
+  draw();
+}
+
+// ══════════════════════════════════════════════════════════
+//  RESIZE & INIT
+// ══════════════════════════════════════════════════════════
+function resize() {
+  W = canvas.width  = canvas.offsetWidth;
+  H = canvas.height = canvas.offsetHeight;
+  computeTransform();
+  draw();
+}
+
+window.addEventListener('resize', resize);
+window.addEventListener('load', resize);
+</script>
+</body>
+</html>
